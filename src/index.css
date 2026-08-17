@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* ── Theme tokens — paleta violeta do painel financeiro original ────── */
+:root {
+  --theme-bg:      #0b0713;
+  --theme-surface: #150f21;
+  --theme-raised:  #1c1230;
+  --theme-hover:   #241a3a;
+  --theme-border:  rgba(255, 255, 255, 0.08);
+  --theme-1:       #f1ecf9;
+  --theme-2:       #cbbfe0;
+  --theme-3:       #a396b8;
+  --theme-4:       #6c6084;
+}
+
+[data-theme="light"] {
+  --theme-bg:      #f7f5fb;
+  --theme-surface: #ffffff;
+  --theme-raised:  #f1ecf9;
+  --theme-hover:   #e7defa;
+  --theme-border:  rgba(80, 50, 120, 0.14);
+  --theme-1:       #1c1230;
+  --theme-2:       #4a3d63;
+  --theme-3:       #6c6084;
+  --theme-4:       #a396b8;
+}
+
+@theme inline {
+  --color-theme-bg:      var(--theme-bg);
+  --color-theme-surface: var(--theme-surface);
+  --color-theme-raised:  var(--theme-raised);
+  --color-theme-hover:   var(--theme-hover);
+  --color-theme-border:  var(--theme-border);
+  --color-theme-1:       var(--theme-1);
+  --color-theme-2:       var(--theme-2);
+  --color-theme-3:       var(--theme-3);
+  --color-theme-4:       var(--theme-4);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--theme-bg);
+    color: var(--theme-1);
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--theme-border);
+    border-radius: 10px;
+  }
+}
