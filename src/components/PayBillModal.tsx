@@ -1,5 +1,7 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 import { BillStatus } from "../lib/api";
+import { ConfirmModal } from "./ConfirmModal";
 import { MoneyInput } from "./MoneyInput";
 
 type Props = {
@@ -14,13 +16,31 @@ export function PayBillModal({ bill, defaultDate, onClose, onSubmit }: Props) {
   const [date, setDate] = useState(defaultDate);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+
+  const initialRef = useRef({ amount: 0, date: defaultDate });
 
   useEffect(() => {
     if (!bill) return;
-    setAmount(bill.estimatedValue);
-    setDate(defaultDate);
+    const initial = { amount: bill.estimatedValue, date: defaultDate };
+    initialRef.current = initial;
+    setAmount(initial.amount);
+    setDate(initial.date);
     setError(null);
+    setConfirmingClose(false);
   }, [bill, defaultDate]);
+
+  const dirty = amount !== initialRef.current.amount || date !== initialRef.current.date;
+
+  function attemptClose() {
+    if (dirty) {
+      setConfirmingClose(true);
+    } else {
+      onClose();
+    }
+  }
+
+  useEscapeClose(!!bill, attemptClose);
 
   if (!bill) return null;
 
@@ -42,11 +62,11 @@ export function PayBillModal({ bill, defaultDate, onClose, onSubmit }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={attemptClose}>
       <div className="w-full max-w-sm rounded-2xl border border-violet-400/20 bg-theme-surface p-7" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-theme-1">Marcar "{bill.name}" como paga</h3>
-          <button onClick={onClose} className="text-theme-4 hover:text-theme-1">
+          <button onClick={attemptClose} className="text-theme-4 hover:text-theme-1">
             ✕
           </button>
         </div>
@@ -74,6 +94,17 @@ export function PayBillModal({ bill, defaultDate, onClose, onSubmit }: Props) {
           </button>
         </form>
       </div>
+
+      <ConfirmModal
+        open={confirmingClose}
+        title="Sair sem salvar?"
+        message="As alterações feitas serão perdidas."
+        confirmLabel="Sair sem salvar"
+        cancelLabel="Continuar editando"
+        danger
+        onConfirm={onClose}
+        onCancel={() => setConfirmingClose(false)}
+      />
     </div>
   );
 }

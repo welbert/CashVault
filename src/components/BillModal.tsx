@@ -1,5 +1,7 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 import { BillFrequency, BillStatus } from "../lib/api";
+import { ConfirmModal } from "./ConfirmModal";
 import { MoneyInput } from "./MoneyInput";
 import { MONTH_NAMES } from "../strings";
 
@@ -17,15 +19,42 @@ export function BillModal({ open, editing, onClose, onSubmit }: Props) {
   const [estimatedValue, setEstimatedValue] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+
+  const initialRef = useRef({ name: "", frequency: "monthly" as BillFrequency, dueMonth: 1, estimatedValue: 0 });
 
   useEffect(() => {
     if (!open) return;
-    setName(editing?.name ?? "");
-    setFrequency(editing?.frequency ?? "monthly");
-    setDueMonth(editing?.dueMonth ?? 1);
-    setEstimatedValue(editing?.estimatedValue ?? 0);
+    const initial = {
+      name: editing?.name ?? "",
+      frequency: editing?.frequency ?? ("monthly" as BillFrequency),
+      dueMonth: editing?.dueMonth ?? 1,
+      estimatedValue: editing?.estimatedValue ?? 0,
+    };
+    initialRef.current = initial;
+    setName(initial.name);
+    setFrequency(initial.frequency);
+    setDueMonth(initial.dueMonth);
+    setEstimatedValue(initial.estimatedValue);
     setError(null);
+    setConfirmingClose(false);
   }, [open, editing]);
+
+  const dirty =
+    name !== initialRef.current.name ||
+    frequency !== initialRef.current.frequency ||
+    dueMonth !== initialRef.current.dueMonth ||
+    estimatedValue !== initialRef.current.estimatedValue;
+
+  function attemptClose() {
+    if (dirty) {
+      setConfirmingClose(true);
+    } else {
+      onClose();
+    }
+  }
+
+  useEscapeClose(open, attemptClose);
 
   if (!open) return null;
 
@@ -47,11 +76,11 @@ export function BillModal({ open, editing, onClose, onSubmit }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={attemptClose}>
       <div className="w-full max-w-sm rounded-2xl border border-violet-400/20 bg-theme-surface p-7" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-theme-1">{editing ? "Editar conta" : "Nova conta"}</h3>
-          <button onClick={onClose} className="text-theme-4 hover:text-theme-1">
+          <button onClick={attemptClose} className="text-theme-4 hover:text-theme-1">
             ✕
           </button>
         </div>
@@ -123,6 +152,17 @@ export function BillModal({ open, editing, onClose, onSubmit }: Props) {
           </button>
         </form>
       </div>
+
+      <ConfirmModal
+        open={confirmingClose}
+        title="Sair sem salvar?"
+        message="As alterações feitas serão perdidas."
+        confirmLabel="Sair sem salvar"
+        cancelLabel="Continuar editando"
+        danger
+        onConfirm={onClose}
+        onCancel={() => setConfirmingClose(false)}
+      />
     </div>
   );
 }

@@ -1,14 +1,14 @@
-# Arquitetura
+# Architecture
 
-## Visão geral
+## Overview
 
-Duas camadas independentes que se comunicam via IPC do Tauri (`invoke`):
+Two independent layers that communicate via Tauri IPC (`invoke`):
 
 ```
 ┌──────────────────────────────────────────────┐
 │  Frontend  (React + TypeScript + Tailwind)   │
 │                                               │
-│  App → ProfileGate → AppShell → páginas      │
+│  App → ProfileGate → AppShell → pages        │
 │        (Dashboard, Movimentações, Contas,    │
 │         Metas & Compras, Tags, Configurações)│
 └───────────────────┬───────────────────────────┘
@@ -16,56 +16,56 @@ Duas camadas independentes que se comunicam via IPC do Tauri (`invoke`):
 ┌───────────────────▼───────────────────────────┐
 │  Backend  (Rust + Tauri v2)                  │
 │                                               │
-│  Comandos → SQLite (rusqlite)                │
+│  Commands → SQLite (rusqlite)                │
 └───────────────────────────────────────────────┘
 ```
 
-| Camada     | Tecnologia                          |
+| Layer      | Technology                          |
 |------------|--------------------------------------|
 | UI         | React 19 + TypeScript + Tailwind v4  |
-| Roteamento | react-router-dom v6                  |
-| Gráficos   | Chart.js + react-chartjs-2           |
+| Routing    | react-router-dom v6                  |
+| Charts     | Chart.js + react-chartjs-2           |
 | Desktop    | Tauri v2                             |
-| Backend    | Rust (comandos Tauri)                |
-| Banco      | SQLite via `rusqlite` (bundled)      |
+| Backend    | Rust (Tauri commands)                |
+| Database   | SQLite via `rusqlite` (bundled)      |
 | Build      | Vite v7                              |
 
-## Fluxo de dados — abertura do app
+## Data flow — app startup
 
 ```
-main.tsx (aplica tema, desabilita botão direito)
+main.tsx (applies theme, disables right-click)
        │
        ▼
 App.tsx → <ProfileGate>
        │
        ├─ invoke("get_active_profile")
        │     │
-       │     ├─ existe perfil ativo → renderiza <AppShell><Outlet/></AppShell>
+       │     ├─ active profile exists → renders <AppShell><Outlet/></AppShell>
        │     │
-       │     └─ nenhum ativo → invoke("list_users")
-       │           ├─ lista vazia  → redireciona /perfil/novo
-       │           └─ lista não vazia → mostra seletor de perfil inline
+       │     └─ none active → invoke("list_users")
+       │           ├─ empty list  → redirects to /perfil/novo
+       │           └─ non-empty list → shows inline profile selector
        │
        ▼
-Dashboard (rota "/") → invoke("get_dashboard", {userId, year, month})
-                     → invoke("list_bills", ...) para o alerta de contas
-                     → invoke("list_targets", {kind:"goal"}) para a meta principal
+Dashboard (route "/") → invoke("get_dashboard", {userId, year, month})
+                     → invoke("list_bills", ...) for the pending bill alert
+                     → invoke("list_targets", {kind:"goal"}) for the main goal
 ```
 
-Todo o estado de "qual perfil está ativo" vive em `ProfileContext` (frontend) e é espelhado no backend por `AppState.active_user_id` (em memória) + `config.last_active_user_id` (persistido — usado para lembrar o perfil entre reinícios do app).
+All the "which profile is active" state lives in `ProfileContext` (frontend) and is mirrored on the backend by `AppState.active_user_id` (in memory) + `config.last_active_user_id` (persisted — used to remember the profile across app restarts).
 
-## Ciclo de vida do processo
+## Process lifecycle
 
-- **Sem tray, sem hide-on-close** — diferente do `Personal.TOTP`: fechar a janela (X) encerra o processo normalmente. Não há ícone na bandeja nem atalho global.
-- **Sem autenticação ainda** — `users.password_hash`/`password_salt` existem no schema mas não são usados; qualquer perfil abre sem senha. Ver `docs/database.md`.
-- Uma única conexão SQLite (`AppState.db: Mutex<Connection>`) compartilhada por todos os comandos.
+- **No tray, no hide-on-close** — unlike `Personal.TOTP`: closing the window (X) ends the process normally. There is no tray icon nor global shortcut.
+- **No authentication yet** — `users.password_hash`/`password_salt` exist in the schema but aren't used; any profile opens without a password. See `docs/database.md`.
+- A single SQLite connection (`AppState.db: Mutex<Connection>`) shared by all commands.
 
-## Diretório de dados
+## Data directory
 
-| SO      | Caminho                                                              |
+| OS      | Path                                                              |
 |---------|------------------------------------------------------------------------|
 | Windows | `%APPDATA%\com.welbert.cashvault\gerenciador.db`                       |
 | macOS   | `~/Library/Application Support/com.welbert.cashvault/gerenciador.db`   |
 | Linux   | `~/.local/share/com.welbert.cashvault/gerenciador.db`                  |
 
-Logs ficam em `.../logs/log-YYYYMMDD.txt` no mesmo diretório base (ver `write_log`/`open_log_dir` em `docs/commands.md`).
+Logs live in `.../logs/log-YYYYMMDD.txt` in the same base directory (see `write_log`/`open_log_dir` in `docs/commands.md`).

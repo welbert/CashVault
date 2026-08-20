@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { useToast } from "../context/ToastContext";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { api, TagWithUsage } from "../lib/api";
@@ -11,6 +12,7 @@ export function TagsManager() {
   const [newTagName, setNewTagName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [deletingTag, setDeletingTag] = useState<TagWithUsage | null>(null);
 
   async function reload() {
     if (!profile) return;
@@ -57,21 +59,21 @@ export function TagsManager() {
     }
   }
 
-  async function handleDelete(tag: TagWithUsage) {
-    const warning =
-      tag.usageCount > 0
-        ? `A tag "${tag.name}" está aplicada em ${tag.usageCount} movimentaç${
-            tag.usageCount === 1 ? "ão" : "ões"
-          }. Se excluir, ela${tag.usageCount === 1 ? "" : "s"} ficará${tag.usageCount === 1 ? "" : "ão"} sem essa tag. Continuar?`
-        : `Excluir a tag "${tag.name}"?`;
-    if (!window.confirm(warning)) return;
+  function handleDelete(tag: TagWithUsage) {
+    setDeletingTag(tag);
+  }
+
+  async function confirmDelete() {
+    if (!deletingTag) return;
     try {
-      await api.tags.delete(tag.id);
+      await api.tags.delete(deletingTag.id);
       await reload();
-      toast.show(`Tag "${tag.name}" excluída.`, "success");
+      toast.show(`Tag "${deletingTag.name}" excluída.`, "success");
     } catch (err) {
       logger.error("falha ao excluir tag", err);
       toast.show("Não foi possível excluir a tag.", "error");
+    } finally {
+      setDeletingTag(null);
     }
   }
 
@@ -141,6 +143,24 @@ export function TagsManager() {
           </button>
         </form>
       </section>
+
+      <ConfirmModal
+        open={!!deletingTag}
+        title="Excluir tag"
+        message={
+          deletingTag && deletingTag.usageCount > 0
+            ? `A tag "${deletingTag.name}" está aplicada em ${deletingTag.usageCount} movimentaç${
+                deletingTag.usageCount === 1 ? "ão" : "ões"
+              }. Se excluir, ela${deletingTag.usageCount === 1 ? "" : "s"} ficará${
+                deletingTag.usageCount === 1 ? "" : "ão"
+              } sem essa tag. Continuar?`
+            : `Excluir a tag "${deletingTag?.name}"?`
+        }
+        confirmLabel="Excluir"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingTag(null)}
+      />
     </div>
   );
 }

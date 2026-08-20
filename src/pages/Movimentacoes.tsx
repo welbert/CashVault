@@ -1,5 +1,6 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
+import { DeleteTransactionModal } from "../components/DeleteTransactionModal";
 import { InstallmentGroupModal } from "../components/InstallmentGroupModal";
 import { TagPicker } from "../components/TagPicker";
 import { TransactionModal } from "../components/TransactionModal";
@@ -28,6 +29,7 @@ export function Movimentacoes() {
   const [exporting, setExporting] = useState(false);
   const [availableTags, setAvailableTags] = useState<TagWithUsage[]>([]);
   const [filterTagIds, setFilterTagIds] = useState<number[]>([]);
+  const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
 
   async function reload() {
     if (!profile) return;
@@ -88,22 +90,40 @@ export function Movimentacoes() {
     await reload();
   }
 
-  async function handleDelete(t: Transaction) {
+  async function handleCreateTag(name: string): Promise<TagWithUsage> {
+    if (!profile) throw new Error("Nenhum perfil ativo");
+    const id = await api.tags.create(profile.id, name);
+    await reload();
+    return { id, name, usageCount: 0 };
+  }
+
+  function handleDelete(t: Transaction) {
+    setDeletingTx(t);
+  }
+
+  async function deleteSingle() {
+    if (!deletingTx) return;
     try {
-      if (t.installmentGroupId && t.installmentCount && t.installmentCount > 1) {
-        const whole = window.confirm(`"${t.name}" faz parte de uma compra parcelada. Remover todas as ${t.installmentCount} parcelas?`);
-        if (whole) {
-          await api.transactions.deleteInstallmentGroup(t.installmentGroupId);
-        } else {
-          await api.transactions.delete(t.id);
-        }
-      } else {
-        await api.transactions.delete(t.id);
-      }
+      await api.transactions.delete(deletingTx.id);
       await reload();
     } catch (err) {
       logger.error("falha ao remover lançamento", err);
       toast.show("Não foi possível remover o lançamento.", "error");
+    } finally {
+      setDeletingTx(null);
+    }
+  }
+
+  async function deleteWholeGroup() {
+    if (!deletingTx?.installmentGroupId) return;
+    try {
+      await api.transactions.deleteInstallmentGroup(deletingTx.installmentGroupId);
+      await reload();
+    } catch (err) {
+      logger.error("falha ao remover parcelas", err);
+      toast.show("Não foi possível remover as parcelas.", "error");
+    } finally {
+      setDeletingTx(null);
     }
   }
 
@@ -196,16 +216,19 @@ export function Movimentacoes() {
       <div className="rounded-2xl border border-theme-border bg-theme-surface p-6">
         {loading && <div className="py-6 text-center text-sm text-theme-4">Carregando...</div>}
         {!loading && transactions.length === 0 && <div className="py-6 text-center text-sm text-theme-4">Nenhum lançamento no período.</div>}
-        {!loading &&
-          transactions.map((t) => (
-            <TransactionRow
-              key={t.id}
-              transaction={t}
-              onEdit={(tx) => setModal({ kind: tx.type, editing: tx })}
-              onDelete={handleDelete}
-              onViewGroup={(tx) => setViewGroupId(tx.installmentGroupId)}
-            />
-          ))}
+        {!loading && (
+          <div className="flex flex-col divide-y divide-theme-border">
+            {transactions.map((t) => (
+              <TransactionRow
+                key={t.id}
+                transaction={t}
+                onEdit={(tx) => setModal({ kind: tx.type, editing: tx })}
+                onDelete={handleDelete}
+                onViewGroup={(tx) => setViewGroupId(tx.installmentGroupId)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <TransactionModal
@@ -219,6 +242,7 @@ export function Movimentacoes() {
         onCreateInstallments={handleCreateInstallments}
         onUpdate={handleUpdate}
         onRenameGroup={handleRenameGroup}
+        onCreateTag={handleCreateTag}
       />
 
       <InstallmentGroupModal
@@ -232,6 +256,13 @@ export function Movimentacoes() {
           await api.transactions.deleteInstallmentGroup(groupId);
           await reload();
         }}
+      />
+
+      <DeleteTransactionModal
+        transaction={deletingTx}
+        onDeleteSingle={deleteSingle}
+        onDeleteGroup={deleteWholeGroup}
+        onCancel={() => setDeletingTx(null)}
       />
     </div>
   );

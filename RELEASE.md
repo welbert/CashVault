@@ -1,0 +1,29 @@
+# CashVault — Unreleased
+
+---
+
+# CashVault — v0.1.1
+
+## Features
+- **Feature:** tecla Esc agora fecha qualquer modal aberto (Nova entrada/saída, Conta, Marcar como paga, Meta/compra futura, Parcelas), igual ao clique no ✕/fora.
+- **Feature:** fechar um modal com alterações não salvas (Esc, clique fora ou ✕) agora pede confirmação antes de descartar os dados — vale para Nova entrada/saída, Conta, Marcar como paga e Meta/compra futura.
+- **Feature:** seletor de tags em Nova entrada/saída agora mostra só as mais usadas (top 8) com um botão "+" pra buscar entre as demais ou criar uma tag nova na hora, sem precisar sair do modal.
+
+## Fixes
+- **Fix:** compras parceladas nunca conseguiam ser salvas — a primeira parcela violava a CHECK constraint da tabela `transactions` (`installment_group_id` ficava `NULL` enquanto `installment_index`/`installment_count` já vinham preenchidos).
+- **Fix:** tela de Movimentações não tinha a linha divisória entre lançamentos que já existia em Contas, Tags e Metas/Compras futuras.
+- **Fix:** todo diálogo de confirmação do app (excluir conta, tag, lançamento, grupo de parcelas ou perfil) usava `window.confirm()`, que não funciona nesse WebView — a ação seguia direto sem pausar pra confirmação nenhuma. Trocado por um modal de confirmação próprio (`ConfirmModal`), no mesmo estilo visual do resto do app.
+
+---
+
+# CashVault — v0.1.0
+
+## Features
+- **Feature:** multi-perfil, com perfil ativo lembrado entre reinícios e troca/criação/exclusão em Configurações.
+- **Feature:** lançamentos de entrada e saída, à vista ou parcelado (compra parcelada gera N lançamentos mensais reais, com edição/exclusão por parcela ou pelo grupo inteiro).
+- **Feature:** Dashboard com saldo/lucro/movimento do período, gráfico de fluxo, meta principal e aviso de contas pendentes.
+- **Feature:** tela de Movimentações com filtro por ano/mês/tags e exportação CSV respeitando o filtro atual.
+- **Feature:** contas recorrentes (mensais/anuais) com status derivado da existência de lançamento pago no período.
+- **Feature:** metas de longo prazo e compras futuras, com progresso sempre vs saldo total acumulado do perfil (sem reset anual).
+- **Feature:** tags N-pra-N nas movimentações, com filtro por múltiplas tags (OR) e gerenciador de tags.
+- **Feature:** tema claro/escuro e logger em arquivo, acessível via Configurações → Diagnóstico → Abrir pasta de logs.

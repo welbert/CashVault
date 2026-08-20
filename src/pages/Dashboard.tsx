@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { FlowChart } from "../components/charts/FlowChart";
 import { GoalDonut } from "../components/charts/GoalDonut";
+import { DeleteTransactionModal } from "../components/DeleteTransactionModal";
 import { InstallmentGroupModal } from "../components/InstallmentGroupModal";
 import { TransactionModal } from "../components/TransactionModal";
 import { TransactionRow } from "../components/TransactionRow";
@@ -33,6 +34,7 @@ export function Dashboard() {
   const [viewGroupId, setViewGroupId] = useState<number | null>(null);
   const [availableTags, setAvailableTags] = useState<TagWithUsage[]>([]);
   const [bills, setBills] = useState<BillStatus[]>([]);
+  const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
 
   function changePeriod(y: number, m: number) {
     setSearchParams({ ano: String(y), mes: String(m) });
@@ -100,22 +102,41 @@ export function Dashboard() {
     await reload();
   }
 
-  async function handleDelete(t: Transaction) {
+  async function handleCreateTag(name: string): Promise<TagWithUsage> {
+    if (!profile) throw new Error("Nenhum perfil ativo");
+    const id = await api.tags.create(profile.id, name);
+    const tags = await api.tags.list(profile.id);
+    setAvailableTags(tags);
+    return { id, name, usageCount: 0 };
+  }
+
+  function handleDelete(t: Transaction) {
+    setDeletingTx(t);
+  }
+
+  async function deleteSingle() {
+    if (!deletingTx) return;
     try {
-      if (t.installmentGroupId && t.installmentCount && t.installmentCount > 1) {
-        const whole = window.confirm(`"${t.name}" faz parte de uma compra parcelada. Remover todas as ${t.installmentCount} parcelas?`);
-        if (whole) {
-          await api.transactions.deleteInstallmentGroup(t.installmentGroupId);
-        } else {
-          await api.transactions.delete(t.id);
-        }
-      } else {
-        await api.transactions.delete(t.id);
-      }
+      await api.transactions.delete(deletingTx.id);
       await reload();
     } catch (err) {
       logger.error("falha ao remover lançamento", err);
       toast.show("Não foi possível remover o lançamento.", "error");
+    } finally {
+      setDeletingTx(null);
+    }
+  }
+
+  async function deleteWholeGroup() {
+    if (!deletingTx?.installmentGroupId) return;
+    try {
+      await api.transactions.deleteInstallmentGroup(deletingTx.installmentGroupId);
+      await reload();
+    } catch (err) {
+      logger.error("falha ao remover parcelas", err);
+      toast.show("Não foi possível remover as parcelas.", "error");
+    } finally {
+      setDeletingTx(null);
     }
   }
 
@@ -332,6 +353,7 @@ export function Dashboard() {
         onCreateInstallments={handleCreateInstallments}
         onUpdate={handleUpdate}
         onRenameGroup={handleRenameGroup}
+        onCreateTag={handleCreateTag}
       />
 
       <InstallmentGroupModal
@@ -345,6 +367,13 @@ export function Dashboard() {
           await api.transactions.deleteInstallmentGroup(groupId);
           await reload();
         }}
+      />
+
+      <DeleteTransactionModal
+        transaction={deletingTx}
+        onDeleteSingle={deleteSingle}
+        onDeleteGroup={deleteWholeGroup}
+        onCancel={() => setDeletingTx(null)}
       />
     </div>
   );

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 import { api, Transaction } from "../lib/api";
 import { fmt, fmtDate } from "../lib/format";
 import { logger } from "../logger";
+import { ConfirmModal } from "./ConfirmModal";
 
 type Props = {
   groupId: number | null;
@@ -13,6 +15,7 @@ type Props = {
 export function InstallmentGroupModal({ groupId, onClose, onDeleteRow, onDeleteGroup }: Props) {
   const [rows, setRows] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmingDeleteGroup, setConfirmingDeleteGroup] = useState(false);
 
   useEffect(() => {
     if (!groupId) return;
@@ -24,6 +27,8 @@ export function InstallmentGroupModal({ groupId, onClose, onDeleteRow, onDeleteG
       .finally(() => setLoading(false));
   }, [groupId]);
 
+  useEscapeClose(!!groupId, onClose);
+
   if (!groupId) return null;
 
   async function handleDeleteRow(id: number) {
@@ -31,11 +36,10 @@ export function InstallmentGroupModal({ groupId, onClose, onDeleteRow, onDeleteG
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
 
-  async function handleDeleteGroup() {
+  async function confirmDeleteGroup() {
     if (!groupId) return;
-    const ok = window.confirm(`Remover todas as ${rows.length} parcelas desta compra?`);
-    if (!ok) return;
     await onDeleteGroup(groupId);
+    setConfirmingDeleteGroup(false);
     onClose();
   }
 
@@ -84,12 +88,22 @@ export function InstallmentGroupModal({ groupId, onClose, onDeleteRow, onDeleteG
         </div>
 
         <button
-          onClick={handleDeleteGroup}
+          onClick={() => setConfirmingDeleteGroup(true)}
           className="mt-4 w-full rounded-xl border border-rose-500/30 bg-theme-bg py-2.5 text-sm font-semibold text-rose-400 hover:bg-rose-500/10"
         >
           Excluir todas as parcelas desta compra
         </button>
       </div>
+
+      <ConfirmModal
+        open={confirmingDeleteGroup}
+        title="Excluir todas as parcelas"
+        message={`Remover todas as ${rows.length} parcelas desta compra?`}
+        confirmLabel="Excluir"
+        danger
+        onConfirm={confirmDeleteGroup}
+        onCancel={() => setConfirmingDeleteGroup(false)}
+      />
     </div>
   );
 }

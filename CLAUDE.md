@@ -1,123 +1,131 @@
 # CashVault — CLAUDE.md
 
-App desktop de finanças pessoais (multi-perfil). Controla entradas/saídas, compras parceladas (viram N lançamentos mensais reais), metas de longo prazo e compras futuras (progresso vs saldo acumulado, sem reset anual), tags, contas recorrentes (mensais/anuais) e exportação CSV. Modelado na mesma arquitetura do projeto irmão `Personal.TOTP`, mas sem tray/hotkey/senha — é uma janela normal.
+Desktop personal finance app (multi-profile). Tracks income/expenses, installment purchases (turned into N real monthly entries), long-term goals and future purchases (progress vs accumulated balance, no annual reset), tags, recurring bills (monthly/annual), and CSV export. Modeled on the same architecture as the sibling project `Personal.TOTP`, but without tray/hotkey/password — it's a regular window.
 
-## Regra de versionamento
+## Versioning rule
 
-**Ao subir a versão, atualize os 3 arquivos em sincronia** — eles sempre precisam bater:
+**When bumping the version, update all 3 files in sync** — they always need to match:
 
-| Arquivo | Campo |
+| File | Field |
 |------|-------|
-| `package.json` | `"version"` (linha 5) |
-| `src-tauri/Cargo.toml` | `version` (linha 3) |
-| `src-tauri/tauri.conf.json` | `"version"` (linha 4) |
+| `package.json` | `"version"` (line 5) |
+| `src-tauri/Cargo.toml` | `version` (line 3) |
+| `src-tauri/tauri.conf.json` | `"version"` (line 4) |
 
-Ver [docs/versioning.md](docs/versioning.md) para as regras de semver.
+See [docs/versioning.md](docs/versioning.md) for semver rules.
 
-## Regra de campo monetário
+## Money field rule
 
-**Todo input de valor em R$ usa o componente `MoneyInput`** (`src/components/MoneyInput.tsx`) — nunca um `<input type="number">` cru. Ele já implementa a máscara "dígito entra pela direita" (1 → R$0,01) usada em todo o app. Ver `docs/frontend.md`.
+**Every R$ value input uses the `MoneyInput` component** (`src/components/MoneyInput.tsx`) — never a raw `<input type="number">`. It already implements the "digit enters from the right" mask (1 → R$0.01) used throughout the app. See `docs/frontend.md`.
 
-## Regra de tema (tokens)
+## Theme rule (tokens)
 
-Nunca hardcodar cor de fundo/texto/borda do Tailwind (`bg-slate-*`, `text-gray-*`...) — sempre os tokens `bg-theme-*` / `text-theme-*` / `border-theme-border` definidos em `src/index.css`. Cores de destaque (`violet`, `rose`, `emerald`, `amber`) são intencionais e ficam como estão. Ver `docs/frontend.md`.
+Never hardcode a Tailwind background/text/border color (`bg-slate-*`, `text-gray-*`...) — always use the `bg-theme-*` / `text-theme-*` / `border-theme-border` tokens defined in `src/index.css`. Accent colors (`violet`, `rose`, `emerald`, `amber`) are intentional and stay as they are. See `docs/frontend.md`.
 
-## Regra de schema (init_db + migrate_db)
+## Release Notes
 
-Toda tabela/coluna nova entra em **dois lugares** em `src-tauri/src/db.rs`: o `CREATE TABLE` completo dentro de `init_db` (instalação nova) e um `ALTER TABLE` idempotente equivalente dentro de `migrate_db` (quem já tinha o banco). Um `CREATE INDEX` que referencia a coluna nova só pode ficar em `migrate_db`, nunca colado no `CREATE TABLE IF NOT EXISTS` de `init_db` — se a tabela já existia antes da coluna, esse `CREATE TABLE IF NOT EXISTS` vira no-op e a coluna não existe ainda naquele ponto (isso já quebrou o app uma vez, ver `docs/database.md`).
+After every bug fix or new feature, append an entry to `RELEASE.md` under the current version section, grouped under a `## Features` / `## Fixes` subheading (only add the subheadings that section actually has entries for — e.g. a fix-only version gets just `## Fixes`):
+- `**Fix:**` for bug fixes, under `## Fixes`
+- `**Feature:**` for new functionality, under `## Features`
+
+If the version section does not exist yet, create it at the top of the file as `# CashVault — Unreleased`. It gets renamed to the actual version number (`vX.Y.Z`) only in the release commit that bumps the version.
+
+## Schema rule (init_db + migrate_db)
+
+Every new table/column goes in **two places** in `src-tauri/src/db.rs`: the full `CREATE TABLE` inside `init_db` (fresh install) and an equivalent idempotent `ALTER TABLE` inside `migrate_db` (for whoever already had the database). A `CREATE INDEX` that references the new column can only live in `migrate_db`, never appended to `init_db`'s `CREATE TABLE IF NOT EXISTS` — if the table already existed before the column, that `CREATE TABLE IF NOT EXISTS` becomes a no-op and the column doesn't exist yet at that point (this already broke the app once, see `docs/database.md`).
 
 ## Stack
 
-| Camada     | Tecnologia                          |
+| Layer      | Technology                            |
 |------------|--------------------------------------|
 | UI         | React 19 + TypeScript + Tailwind v4  |
-| Roteamento | react-router-dom v6                  |
+| Routing    | react-router-dom v6                  |
 | Desktop    | Tauri v2                             |
-| Backend    | Rust (comandos Tauri)                |
-| Banco      | SQLite via `rusqlite` (bundled)      |
-| Gráficos   | Chart.js + react-chartjs-2           |
+| Backend    | Rust (Tauri commands)                |
+| Database   | SQLite via `rusqlite` (bundled)      |
+| Charts     | Chart.js + react-chartjs-2           |
 | Build      | Vite v7                              |
 
-**Gerenciador de pacotes: pnpm** (não usar npm/yarn).
+**Package manager: pnpm** (do not use npm/yarn).
 
-## Comandos
+## Commands
 
 ```bash
-pnpm tauri dev        # dev com hot-reload (Rust + frontend)
-pnpm tauri build      # build de produção (instalador em src-tauri/target/release/bundle)
-pnpm build            # só o frontend (tsc + vite build)
-cargo check           # dentro de src-tauri/ — type-check rápido do backend sem gerar binário
+pnpm tauri dev        # dev with hot-reload (Rust + frontend)
+pnpm tauri build      # production build (installer in src-tauri/target/release/bundle)
+pnpm build            # frontend only (tsc + vite build)
+cargo check           # inside src-tauri/ — quick type-check of the backend without generating a binary
 ```
 
-Se `pnpm install`/`pnpm build` reclamar de build script ignorado (esbuild): `pnpm approve-builds --all`.
+If `pnpm install`/`pnpm build` complains about an ignored build script (esbuild): `pnpm approve-builds --all`.
 
-## Estrutura
+## Structure
 
 ```
 CashVault/
 ├── src/
-│   ├── App.tsx                  # rotas (ver docs/frontend.md)
-│   ├── main.tsx                 # aplica tema + desabilita botão direito antes do render
-│   ├── theme.ts / logger.ts     # helpers de tema e logging (mesmo padrão do Personal.TOTP)
-│   ├── pages/                   # uma por rota
-│   ├── components/              # ver docs/frontend.md
+│   ├── App.tsx                  # routes (see docs/frontend.md)
+│   ├── main.tsx                 # applies theme + disables right-click before render
+│   ├── theme.ts / logger.ts     # theme and logging helpers (same pattern as Personal.TOTP)
+│   ├── pages/                   # one per route
+│   ├── components/              # see docs/frontend.md
 │   ├── context/                 # ProfileContext, ToastContext
 │   ├── hooks/                   # useActiveProfile, useDashboard
 │   └── lib/
-│       ├── api.ts               # único lugar que chama invoke() — tipos espelham as structs Rust
-│       └── format.ts            # fmt() moeda, fmtDate(), fmtPct()
+│       ├── api.ts               # only place that calls invoke() — types mirror the Rust structs
+│       └── format.ts            # fmt() currency, fmtDate(), fmtPct()
 ├── src-tauri/
 │   ├── src/
-│   │   ├── lib.rs               # AppState, setup, registro de comandos
-│   │   ├── db.rs                # schema (init_db + migrate_db), agregações (saldo, totais)
-│   │   ├── models.rs            # structs serializadas (camelCase) devolvidas pro frontend
-│   │   └── commands/            # um arquivo por domínio (users, transactions, targets, tags, bills, reports, export, logging)
+│   │   ├── lib.rs               # AppState, setup, command registration
+│   │   ├── db.rs                # schema (init_db + migrate_db), aggregations (balance, totals)
+│   │   ├── models.rs            # serialized structs (camelCase) returned to the frontend
+│   │   └── commands/            # one file per domain (users, transactions, targets, tags, bills, reports, export, logging)
 │   ├── Cargo.toml
-│   ├── tauri.conf.json          # identifier com.welbert.cashvault, janela 1280x860
+│   ├── tauri.conf.json          # identifier com.welbert.cashvault, 1280x860 window
 │   └── capabilities/default.json
-└── docs/                        # documentação técnica (abaixo)
+└── docs/                        # technical documentation (below)
 ```
 
-## Documentação técnica
+## Technical documentation
 
-| Arquivo | Conteúdo |
+| File | Content |
 |---|---|
-| [docs/architecture.md](docs/architecture.md) | Camadas, fluxo de dados na abertura do app, ciclo de vida do processo, diretório de dados |
-| [docs/database.md](docs/database.md) | Schema completo do SQLite, padrão de migração, o que cada tabela faz |
-| [docs/commands.md](docs/commands.md) | Todos os comandos Tauri, por domínio, com assinatura |
-| [docs/frontend.md](docs/frontend.md) | Rotas, páginas, componentes reaproveitáveis, hooks/contexto, convenções (tema, i18n) |
-| [docs/versioning.md](docs/versioning.md) | Regras de semver, arquivos a atualizar |
+| [docs/architecture.md](docs/architecture.md) | Layers, data flow on app startup, process lifecycle, data directory |
+| [docs/database.md](docs/database.md) | Full SQLite schema, migration pattern, what each table does |
+| [docs/commands.md](docs/commands.md) | All Tauri commands, by domain, with signature |
+| [docs/frontend.md](docs/frontend.md) | Routes, pages, reusable components, hooks/context, conventions (theme, i18n) |
+| [docs/versioning.md](docs/versioning.md) | Semver rules, files to update |
 
-## Comportamentos-chave
+## Key behaviors
 
-- **Fechar a janela** → encerra o processo (sem tray, ao contrário do `Personal.TOTP`)
-- **Botão direito** → menu de contexto desabilitado globalmente
-- **Multi-perfil** → perfil ativo é lembrado entre reinícios (`config.last_active_user_id`); trocar de perfil fica em Configurações
-- **Parcelas** → geradas como N lançamentos mensais reais na criação (não um registro só); editar/excluir pode ser por parcela ou pro grupo inteiro
-- **Metas/compras futuras** → progresso é sempre vs saldo total acumulado do perfil, nunca reseta por ano
-- **Tags** → N-pra-N com movimentações; filtro casa qualquer uma das tags selecionadas (OR)
-- **Contas** → não existe campo "pago" solto — o status é sempre derivado de existir (ou não) uma movimentação vinculada àquele período; excluir a conta nunca apaga movimentações já registradas
-- **Exportar CSV** → sempre respeita o filtro (ano/mês) selecionado na tela de Movimentações
-- **Logger** → usar `logger.*` (`src/logger.ts`) em vez de `console.*` direto; grava em arquivo, acessível via Configurações → Diagnóstico → Abrir pasta de logs
+- **Closing the window** → terminates the process (no tray, unlike `Personal.TOTP`)
+- **Right-click** → context menu disabled globally
+- **Multi-profile** → active profile is remembered across restarts (`config.last_active_user_id`); switching profiles lives in Settings
+- **Installments** → generated as N real monthly entries at creation time (not a single record); editing/deleting can target one installment or the whole group
+- **Goals/future purchases** → progress is always vs the profile's total accumulated balance, never resets per year
+- **Tags** → many-to-many with transactions; filter matches any of the selected tags (OR)
+- **Bills** → there's no standalone "paid" field — status is always derived from whether a transaction linked to that period exists; deleting a bill never deletes already-recorded transactions
+- **CSV export** → always respects the filter (year/month) selected on the Transactions screen
+- **Logger** → use `logger.*` (`src/logger.ts`) instead of `console.*` directly; writes to a file, accessible via Settings → Diagnostics → Open logs folder
 
-## Adicionando funcionalidades
+## Adding features
 
-### Novo comando Rust
-1. Escrever `#[tauri::command] pub fn nome(...)` em `src-tauri/src/commands/<domínio>.rs` (criar arquivo novo se for um domínio novo, registrar em `commands/mod.rs`)
-2. Registrar em `.invoke_handler(tauri::generate_handler![..., commands::<domínio>::nome])` em `lib.rs`
-3. Adicionar o wrapper tipado correspondente em `src/lib/api.ts`
+### New Rust command
+1. Write `#[tauri::command] pub fn name(...)` in `src-tauri/src/commands/<domain>.rs` (create a new file if it's a new domain, register it in `commands/mod.rs`)
+2. Register in `.invoke_handler(tauri::generate_handler![..., commands::<domain>::name])` in `lib.rs`
+3. Add the corresponding typed wrapper in `src/lib/api.ts`
 
-### Nova tabela/coluna
-Ver "Regra de schema" acima e `docs/database.md`.
+### New table/column
+See "Schema rule" above and `docs/database.md`.
 
-### Nova dependência
+### New dependency
 ```bash
 cd src-tauri && cargo add <crate>   # Rust
-pnpm add <pacote>                   # frontend (ou pnpm add -D pra dev)
+pnpm add <package>                  # frontend (or pnpm add -D for dev)
 ```
 
-## Notas de ambiente
+## Environment notes
 
-- Windows: usar `python` (não `python3`) no terminal
-- Identifier do Tauri: `com.welbert.cashvault` — diferente do `Personal.TOTP`, cada app tem sua própria pasta de dados
-- Ícone do app: gerado a partir de uma imagem fonte com `pnpm tauri icon <arquivo.png>` (regenera todo `src-tauri/icons/`)
+- Windows: use `python` (not `python3`) in the terminal
+- Tauri identifier: `com.welbert.cashvault` — different from `Personal.TOTP`, each app has its own data folder
+- App icon: generated from a source image with `pnpm tauri icon <file.png>` (regenerates all of `src-tauri/icons/`)

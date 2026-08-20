@@ -1,78 +1,78 @@
-# Comandos Tauri
+# Tauri Commands
 
-Todos registrados em `src-tauri/src/lib.rs` (`invoke_handler![...]`), implementados em `src-tauri/src/commands/<domínio>.rs`.
-Wrapper tipado no frontend: `src/lib/api.ts` (`api.<domínio>.<método>`) — nenhum componente chama `invoke()` direto.
+All registered in `src-tauri/src/lib.rs` (`invoke_handler![...]`), implemented in `src-tauri/src/commands/<domain>.rs`.
+Typed wrapper on the frontend: `src/lib/api.ts` (`api.<domain>.<method>`) — no component calls `invoke()` directly.
 
-Argumentos são passados em camelCase do lado JS e convertidos automaticamente para snake_case nos parâmetros Rust (comportamento padrão do Tauri v2) — os nomes abaixo já estão no formato Rust.
+Arguments are passed in camelCase on the JS side and automatically converted to snake_case for the Rust parameters (Tauri v2 default behavior) — the names below are already in Rust format.
 
-## Perfis (`commands/users.rs`)
+## Profiles (`commands/users.rs`)
 
-| Comando | Assinatura | Notas |
+| Command | Signature | Notes |
 |---|---|---|
 | `list_users` | `() -> Vec<UserSummary>` | |
-| `create_user` | `(name, base_balance: Option<f64>) -> i64` | seeda as 8 tags padrão e vira o perfil ativo |
-| `get_active_profile` | `() -> Option<UserSummary>` | lê `AppState.active_user_id` |
-| `switch_active_profile` | `(user_id) -> ()` | grava `config.last_active_user_id` |
+| `create_user` | `(name, base_balance: Option<f64>) -> i64` | seeds the 8 default tags and becomes the active profile |
+| `get_active_profile` | `() -> Option<UserSummary>` | reads `AppState.active_user_id` |
+| `switch_active_profile` | `(user_id) -> ()` | writes `config.last_active_user_id` |
 | `rename_user` | `(user_id, name) -> ()` | |
 | `update_user_base_balance` | `(user_id, base_balance) -> ()` | |
-| `delete_user` | `(user_id) -> ()` | cascade em transações/metas/tags/contas |
+| `delete_user` | `(user_id) -> ()` | cascades to transactions/goals/tags/bills |
 
-## Movimentações (`commands/transactions.rs`)
+## Transactions (`commands/transactions.rs`)
 
-| Comando | Assinatura | Notas |
+| Command | Signature | Notes |
 |---|---|---|
-| `list_transactions` | `(user_id, year?, month?, start_date?, end_date?, tag_ids?: Vec<i64>) -> Vec<Transaction>` | filtro de tag é OR; sem `year`/`month`/`start_date`/`end_date` retorna tudo |
-| `create_transaction` | `(user_id, kind, name, date, amount, tag_ids?) -> i64` | lançamento à vista |
-| `create_installment_purchase` | `(user_id, name, first_date, total_amount, installment_count, tag_ids?) -> Vec<i64>` | gera N linhas numa única transação SQL |
-| `update_transaction` | `(id, name, date, amount, tag_ids?: Vec<i64>) -> ()` | edita só a linha específica; `tag_ids: Some([])` limpa as tags, `None` mantém |
-| `delete_transaction` | `(id) -> ()` | uma linha só |
-| `delete_installment_group` | `(group_id) -> usize` | todas as parcelas do grupo |
-| `update_installment_group_name` | `(group_id, name) -> ()` | renomeia todas as parcelas de uma vez |
-| `list_installment_group` | `(group_id) -> Vec<Transaction>` | pra tela de "ver parcelas" |
-| `get_years_with_data` / `get_months_with_data` | `(user_id[, year]) -> Vec<i64>` | alimenta os seletores de ano/mês |
+| `list_transactions` | `(user_id, year?, month?, start_date?, end_date?, tag_ids?: Vec<i64>) -> Vec<Transaction>` | tag filter is OR; without `year`/`month`/`start_date`/`end_date` returns everything |
+| `create_transaction` | `(user_id, kind, name, date, amount, tag_ids?) -> i64` | one-time entry |
+| `create_installment_purchase` | `(user_id, name, first_date, total_amount, installment_count, tag_ids?) -> Vec<i64>` | generates N rows in a single SQL transaction |
+| `update_transaction` | `(id, name, date, amount, tag_ids?: Vec<i64>) -> ()` | edits only the specific row; `tag_ids: Some([])` clears the tags, `None` keeps them |
+| `delete_transaction` | `(id) -> ()` | a single row |
+| `delete_installment_group` | `(group_id) -> usize` | all installments in the group |
+| `update_installment_group_name` | `(group_id, name) -> ()` | renames all installments at once |
+| `list_installment_group` | `(group_id) -> Vec<Transaction>` | for the "view installments" screen |
+| `get_years_with_data` / `get_months_with_data` | `(user_id[, year]) -> Vec<i64>` | feeds the year/month selectors |
 
-## Metas & compras futuras (`commands/targets.rs`)
+## Goals & future purchases (`commands/targets.rs`)
 
-| Comando | Assinatura |
+| Command | Signature |
 |---|---|
-| `list_targets` | `(user_id, kind?: "goal"\|"purchase") -> Vec<Target>` (já com `pct`/`remaining`) |
+| `list_targets` | `(user_id, kind?: "goal"\|"purchase") -> Vec<Target>` (already with `pct`/`remaining`) |
 | `create_target` | `(user_id, kind, name, target_value) -> i64` |
 | `update_target` | `(id, name, target_value) -> ()` |
 | `delete_target` | `(id) -> ()` |
 
 ## Tags (`commands/tags.rs`)
 
-| Comando | Assinatura |
+| Command | Signature |
 |---|---|
-| `list_tags` | `(user_id) -> Vec<TagWithUsage>` (inclui `usage_count`) |
-| `create_tag` | `(user_id, name) -> i64` (erro amigável se nome duplicado) |
+| `list_tags` | `(user_id) -> Vec<TagWithUsage>` (includes `usage_count`) |
+| `create_tag` | `(user_id, name) -> i64` (friendly error if name is duplicated) |
 | `rename_tag` | `(id, name) -> ()` |
-| `delete_tag` | `(id) -> ()` (não avisa sobre uso — quem avisa é o frontend, usando `usage_count`) |
+| `delete_tag` | `(id) -> ()` (doesn't warn about usage — that's the frontend's job, using `usage_count`) |
 
-## Contas (`commands/bills.rs`)
+## Bills (`commands/bills.rs`)
 
-| Comando | Assinatura | Notas |
+| Command | Signature | Notes |
 |---|---|---|
-| `list_bills` | `(user_id, year, month) -> Vec<BillStatus>` | `paid`/`paid_amount`/`paid_transaction_id` calculados pro período informado |
+| `list_bills` | `(user_id, year, month) -> Vec<BillStatus>` | `paid`/`paid_amount`/`paid_transaction_id` computed for the given period |
 | `create_bill` | `(user_id, name, frequency, due_month?: i64, estimated_value) -> i64` | |
 | `update_bill` | `(id, name, frequency, due_month?, estimated_value) -> ()` | |
-| `delete_bill` | `(id) -> ()` | transações já pagas continuam existindo (`bill_id` vira NULL) |
-| `pay_bill` | `(user_id, bill_id, year, month?: i64, amount, date) -> i64` | cria a transação de pagamento; devolve o id dela |
+| `delete_bill` | `(id) -> ()` | already-paid transactions keep existing (`bill_id` becomes NULL) |
+| `pay_bill` | `(user_id, bill_id, year, month?: i64, amount, date) -> i64` | creates the payment transaction; returns its id |
 
-## Relatórios (`commands/reports.rs`)
+## Reports (`commands/reports.rs`)
 
-`get_dashboard(user_id, year, month) -> DashboardData` — um único round-trip com tudo que o Dashboard precisa:
-`month_totals`, `month_history` (meses anteriores do ano, com `pct_change`), `saldo_atual`, `saldo_history`, `year_series` (12 meses, pro gráfico), `year_balance_up_to_month`, `years_with_data`, `months_with_data`.
+`get_dashboard(user_id, year, month) -> DashboardData` — a single round-trip with everything the Dashboard needs:
+`month_totals`, `month_history` (previous months of the year, with `pct_change`), `saldo_atual`, `saldo_history`, `year_series` (12 months, for the chart), `year_balance_up_to_month`, `years_with_data`, `months_with_data`.
 
-Toda agregação é feita em SQL (Rust), não trazendo linhas cruas pro TS somar — ver `db.rs` (`month_totals`, `saldo_up_to`, `prev_year_month`, etc).
+All aggregation is done in SQL (Rust), rather than bringing raw rows to TS to sum — see `db.rs` (`month_totals`, `saldo_up_to`, `prev_year_month`, etc).
 
-## Exportação (`commands/export.rs`)
+## Export (`commands/export.rs`)
 
-`export_transactions_csv(path, user_id, year?, month?, start_date?, end_date?) -> usize` — mesmo filtro de data de `list_transactions` (mas sem filtro de tag). Usa a crate `csv` (escapa corretamente vírgula/aspas). Path é escolhido no frontend via `@tauri-apps/plugin-dialog`.
+`export_transactions_csv(path, user_id, year?, month?, start_date?, end_date?) -> usize` — same date filter as `list_transactions` (but no tag filter). Uses the `csv` crate (correctly escapes commas/quotes). Path is chosen on the frontend via `@tauri-apps/plugin-dialog`.
 
 ## Logs (`commands/logging.rs`)
 
-| Comando | Notas |
+| Command | Notes |
 |---|---|
-| `write_log(level, message)` | chamado por `src/logger.ts`, nunca direto por componentes |
-| `open_log_dir()` | abre a pasta de logs no explorador (usado em Configurações → Diagnóstico) |
+| `write_log(level, message)` | called by `src/logger.ts`, never directly by components |
+| `open_log_dir()` | opens the logs folder in the file explorer (used in Settings → Diagnostics) |

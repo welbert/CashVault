@@ -1,5 +1,7 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 import { Target, TargetKind } from "../lib/api";
+import { ConfirmModal } from "./ConfirmModal";
 import { MoneyInput } from "./MoneyInput";
 
 type Props = {
@@ -15,13 +17,31 @@ export function TargetModal({ open, kind, editing, onClose, onSubmit }: Props) {
   const [value, setValue] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+
+  const initialRef = useRef({ name: "", value: 0 });
 
   useEffect(() => {
     if (!open) return;
-    setName(editing?.name ?? "");
-    setValue(editing?.targetValue ?? 0);
+    const initial = { name: editing?.name ?? "", value: editing?.targetValue ?? 0 };
+    initialRef.current = initial;
+    setName(initial.name);
+    setValue(initial.value);
     setError(null);
+    setConfirmingClose(false);
   }, [open, editing]);
+
+  const dirty = name !== initialRef.current.name || value !== initialRef.current.value;
+
+  function attemptClose() {
+    if (dirty) {
+      setConfirmingClose(true);
+    } else {
+      onClose();
+    }
+  }
+
+  useEscapeClose(open, attemptClose);
 
   if (!open) return null;
 
@@ -45,11 +65,11 @@ export function TargetModal({ open, kind, editing, onClose, onSubmit }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={attemptClose}>
       <div className="w-full max-w-sm rounded-2xl border border-violet-400/20 bg-theme-surface p-7" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-theme-1">{title}</h3>
-          <button onClick={onClose} className="text-theme-4 hover:text-theme-1">
+          <button onClick={attemptClose} className="text-theme-4 hover:text-theme-1">
             ✕
           </button>
         </div>
@@ -77,6 +97,17 @@ export function TargetModal({ open, kind, editing, onClose, onSubmit }: Props) {
           </button>
         </form>
       </div>
+
+      <ConfirmModal
+        open={confirmingClose}
+        title="Sair sem salvar?"
+        message="As alterações feitas serão perdidas."
+        confirmLabel="Sair sem salvar"
+        cancelLabel="Continuar editando"
+        danger
+        onConfirm={onClose}
+        onCancel={() => setConfirmingClose(false)}
+      />
     </div>
   );
 }

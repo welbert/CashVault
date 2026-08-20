@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { MoneyInput } from "../components/MoneyInput";
 import { useToast } from "../context/ToastContext";
 import { useActiveProfile } from "../hooks/useActiveProfile";
@@ -17,6 +18,7 @@ export function Configuracoes() {
   const [theme, setThemeState] = useState<Theme>(getTheme());
   const [newProfileName, setNewProfileName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserSummary | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -67,17 +69,22 @@ export function Configuracoes() {
     }
   }
 
-  async function handleDeleteProfile(u: UserSummary) {
-    const ok = window.confirm(`Excluir o perfil "${u.name}"? Todas as movimentações, metas e compras futuras dele serão apagadas para sempre.`);
-    if (!ok) return;
+  function handleDeleteProfile(u: UserSummary) {
+    setDeletingUser(u);
+  }
+
+  async function confirmDeleteProfile() {
+    if (!deletingUser) return;
     try {
-      await api.users.delete(u.id);
+      await api.users.delete(deletingUser.id);
       await refresh();
       await reloadUsers();
-      toast.show(`Perfil "${u.name}" excluído.`, "success");
+      toast.show(`Perfil "${deletingUser.name}" excluído.`, "success");
     } catch (err) {
       logger.error("falha ao excluir perfil", err);
       toast.show("Não foi possível excluir o perfil.", "error");
+    } finally {
+      setDeletingUser(null);
     }
   }
 
@@ -180,6 +187,16 @@ export function Configuracoes() {
           Abrir pasta de logs
         </button>
       </section>
+
+      <ConfirmModal
+        open={!!deletingUser}
+        title="Excluir perfil"
+        message={`Excluir o perfil "${deletingUser?.name}"? Todas as movimentações, metas e compras futuras dele serão apagadas para sempre.`}
+        confirmLabel="Excluir perfil"
+        danger
+        onConfirm={confirmDeleteProfile}
+        onCancel={() => setDeletingUser(null)}
+      />
     </div>
   );
 }

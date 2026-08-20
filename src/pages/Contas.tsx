@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BillModal } from "../components/BillModal";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { PayBillModal } from "../components/PayBillModal";
 import { useToast } from "../context/ToastContext";
 import { useActiveProfile } from "../hooks/useActiveProfile";
@@ -7,6 +8,8 @@ import { api, BillFrequency, BillStatus } from "../lib/api";
 import { fmt } from "../lib/format";
 import { logger } from "../logger";
 import { MONTH_NAMES } from "../strings";
+
+type PendingConfirm = { title: string; message: string; confirmLabel: string; action: () => Promise<void> };
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -22,6 +25,7 @@ export function Contas() {
   const [bills, setBills] = useState<BillStatus[]>([]);
   const [modal, setModal] = useState<{ editing: BillStatus | null } | null>(null);
   const [payingBill, setPayingBill] = useState<BillStatus | null>(null);
+  const [confirming, setConfirming] = useState<PendingConfirm | null>(null);
 
   async function reload() {
     if (!profile) return;
@@ -47,17 +51,22 @@ export function Contas() {
     await reload();
   }
 
-  async function handleDelete(bill: BillStatus) {
-    const ok = window.confirm(`Excluir a conta "${bill.name}"? As movimentações já registradas continuam existindo, só a conta em si é removida.`);
-    if (!ok) return;
-    try {
-      await api.bills.delete(bill.id);
-      await reload();
-      toast.show(`Conta "${bill.name}" excluída.`, "success");
-    } catch (err) {
-      logger.error("falha ao excluir conta", err);
-      toast.show("Não foi possível excluir a conta.", "error");
-    }
+  function handleDelete(bill: BillStatus) {
+    setConfirming({
+      title: "Excluir conta",
+      message: `Excluir a conta "${bill.name}"? As movimentações já registradas continuam existindo, só a conta em si é removida.`,
+      confirmLabel: "Excluir",
+      action: async () => {
+        try {
+          await api.bills.delete(bill.id);
+          await reload();
+          toast.show(`Conta "${bill.name}" excluída.`, "success");
+        } catch (err) {
+          logger.error("falha ao excluir conta", err);
+          toast.show("Não foi possível excluir a conta.", "error");
+        }
+      },
+    });
   }
 
   async function handlePay(data: { amount: number; date: string }) {
@@ -74,17 +83,29 @@ export function Contas() {
     toast.show(`"${payingBill.name}" marcada como paga.`, "success");
   }
 
-  async function handleUndoPay(bill: BillStatus) {
+  function handleUndoPay(bill: BillStatus) {
     if (!bill.paidTransactionId) return;
-    const ok = window.confirm(`Desfazer o pagamento de "${bill.name}"? A movimentação registrada será removida.`);
-    if (!ok) return;
-    try {
-      await api.transactions.delete(bill.paidTransactionId);
-      await reload();
-    } catch (err) {
-      logger.error("falha ao desfazer pagamento", err);
-      toast.show("Não foi possível desfazer o pagamento.", "error");
-    }
+    const transactionId = bill.paidTransactionId;
+    setConfirming({
+      title: "Desfazer pagamento",
+      message: `Desfazer o pagamento de "${bill.name}"? A movimentação registrada será removida.`,
+      confirmLabel: "Desfazer",
+      action: async () => {
+        try {
+          await api.transactions.delete(transactionId);
+          await reload();
+        } catch (err) {
+          logger.error("falha ao desfazer pagamento", err);
+          toast.show("Não foi possível desfazer o pagamento.", "error");
+        }
+      },
+    });
+  }
+
+  async function runConfirmed() {
+    if (!confirming) return;
+    await confirming.action();
+    setConfirming(null);
   }
 
   return (
@@ -152,6 +173,15 @@ export function Contas() {
 
       <BillModal open={!!modal} editing={modal?.editing ?? null} onClose={() => setModal(null)} onSubmit={handleSubmit} />
       <PayBillModal bill={payingBill} defaultDate={todayIso()} onClose={() => setPayingBill(null)} onSubmit={handlePay} />
+      <ConfirmModal
+        open={!!confirming}
+        title={confirming?.title ?? ""}
+        message={confirming?.message ?? ""}
+        confirmLabel={confirming?.confirmLabel ?? "Confirmar"}
+        danger
+        onConfirm={runConfirmed}
+        onCancel={() => setConfirming(null)}
+      />
     </div>
   );
 }

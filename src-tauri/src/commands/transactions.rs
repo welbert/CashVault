@@ -224,30 +224,46 @@ pub fn create_installment_purchase(
         running_cents += (value * 100.0).round();
         let inst_date = add_months_clamped(base_date, i as i32);
 
-        tx.execute(
-            "INSERT INTO transactions (user_id, type, name, date, amount, installment_group_id, installment_index, installment_count)
-             VALUES (?1, 'out', ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![
-                user_id,
-                name.trim(),
-                inst_date.format("%Y-%m-%d").to_string(),
-                value,
-                group_id,
-                i + 1,
-                installment_count
-            ],
-        )
-        .map_err(|e| e.to_string())?;
-
-        let new_id = tx.last_insert_rowid();
-        if i == 0 {
-            group_id = Some(new_id);
+        let new_id = if i == 0 {
+            // installment_group_id ainda não existe na primeira parcela (só nasce com o próprio id),
+            // e a CHECK constraint exige as 3 colunas juntas nulas ou juntas preenchidas — insere
+            // tudo NULL e completa com UPDATE depois de saber o id.
             tx.execute(
-                "UPDATE transactions SET installment_group_id = ?1 WHERE id = ?1",
-                params![new_id],
+                "INSERT INTO transactions (user_id, type, name, date, amount)
+                 VALUES (?1, 'out', ?2, ?3, ?4)",
+                params![
+                    user_id,
+                    name.trim(),
+                    inst_date.format("%Y-%m-%d").to_string(),
+                    value
+                ],
             )
             .map_err(|e| e.to_string())?;
-        }
+            let id = tx.last_insert_rowid();
+            group_id = Some(id);
+            tx.execute(
+                "UPDATE transactions SET installment_group_id = ?1, installment_index = 1, installment_count = ?2 WHERE id = ?1",
+                params![id, installment_count],
+            )
+            .map_err(|e| e.to_string())?;
+            id
+        } else {
+            tx.execute(
+                "INSERT INTO transactions (user_id, type, name, date, amount, installment_group_id, installment_index, installment_count)
+                 VALUES (?1, 'out', ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    user_id,
+                    name.trim(),
+                    inst_date.format("%Y-%m-%d").to_string(),
+                    value,
+                    group_id,
+                    i + 1,
+                    installment_count
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+            tx.last_insert_rowid()
+        };
         if let Some(tag_id_list) = &tag_ids {
             for tag_id in tag_id_list {
                 tx.execute(

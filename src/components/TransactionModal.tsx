@@ -1,8 +1,10 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 import { TagWithUsage, Transaction, TransactionKind } from "../lib/api";
 import { fmt } from "../lib/format";
+import { ConfirmModal } from "./ConfirmModal";
 import { MoneyInput } from "./MoneyInput";
-import { TagPicker } from "./TagPicker";
+import { TagAssignPicker } from "./TagAssignPicker";
 
 type Props = {
   open: boolean;
@@ -21,6 +23,7 @@ type Props = {
   }) => Promise<void>;
   onUpdate: (data: { name: string; date: string; amount: number; tagIds: number[] }) => Promise<void>;
   onRenameGroup: (groupId: number, name: string) => Promise<void>;
+  onCreateTag: (name: string) => Promise<TagWithUsage>;
 };
 
 export function TransactionModal({
@@ -34,6 +37,7 @@ export function TransactionModal({
   onCreateInstallments,
   onUpdate,
   onRenameGroup,
+  onCreateTag,
 }: Props) {
   const [name, setName] = useState("");
   const [date, setDate] = useState(defaultDate);
@@ -44,24 +48,56 @@ export function TransactionModal({
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
 
   const isEditingInstallment = !!editing?.installmentCount;
 
+  const initialRef = useRef({ name: "", date: defaultDate, amount: 0, payType: "avista" as "avista" | "parcelado", installments: "2", tagIds: [] as number[] });
+
   useEffect(() => {
     if (!open) return;
-    setName(editing?.name ?? "");
-    setDate(editing?.date ?? defaultDate);
-    setAmount(editing?.amount ?? 0);
-    setPayType(editing?.installmentCount ? "parcelado" : "avista");
-    setInstallments(editing?.installmentCount ? String(editing.installmentCount) : "2");
+    const initial = {
+      name: editing?.name ?? "",
+      date: editing?.date ?? defaultDate,
+      amount: editing?.amount ?? 0,
+      payType: (editing?.installmentCount ? "parcelado" : "avista") as "avista" | "parcelado",
+      installments: editing?.installmentCount ? String(editing.installmentCount) : "2",
+      tagIds: editing?.tags.map((t) => t.id) ?? [],
+    };
+    initialRef.current = initial;
+    setName(initial.name);
+    setDate(initial.date);
+    setAmount(initial.amount);
+    setPayType(initial.payType);
+    setInstallments(initial.installments);
     setRenameWholeGroup(true);
-    setTagIds(editing?.tags.map((t) => t.id) ?? []);
+    setTagIds(initial.tagIds);
     setError(null);
+    setConfirmingClose(false);
   }, [open, editing, defaultDate]);
 
   function toggleTag(id: number) {
     setTagIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
+
+  const dirty =
+    name !== initialRef.current.name ||
+    date !== initialRef.current.date ||
+    amount !== initialRef.current.amount ||
+    payType !== initialRef.current.payType ||
+    installments !== initialRef.current.installments ||
+    tagIds.length !== initialRef.current.tagIds.length ||
+    tagIds.some((id) => !initialRef.current.tagIds.includes(id));
+
+  function attemptClose() {
+    if (dirty) {
+      setConfirmingClose(true);
+    } else {
+      onClose();
+    }
+  }
+
+  useEscapeClose(open, attemptClose);
 
   if (!open) return null;
 
@@ -108,11 +144,11 @@ export function TransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onClick={attemptClose}>
       <div className="w-full max-w-sm rounded-2xl border border-violet-400/20 bg-theme-surface p-7" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-theme-1">{title}</h3>
-          <button onClick={onClose} className="text-theme-4 hover:text-theme-1">
+          <button onClick={attemptClose} className="text-theme-4 hover:text-theme-1">
             ✕
           </button>
         </div>
@@ -142,12 +178,10 @@ export function TransactionModal({
             <MoneyInput value={amount} onChange={setAmount} />
           </label>
 
-          {availableTags.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-xs uppercase tracking-wide text-theme-3">Tags</span>
-              <TagPicker tags={availableTags} selected={tagIds} onToggle={toggleTag} />
-            </div>
-          )}
+          <div className="flex flex-col gap-1.5">
+            <span className="font-mono text-xs uppercase tracking-wide text-theme-3">Tags</span>
+            <TagAssignPicker tags={availableTags} selected={tagIds} onToggle={toggleTag} onCreate={onCreateTag} />
+          </div>
 
           {isEditingInstallment && (
             <label className="flex items-center gap-2 text-xs text-theme-3">
@@ -222,6 +256,17 @@ export function TransactionModal({
           </button>
         </form>
       </div>
+
+      <ConfirmModal
+        open={confirmingClose}
+        title="Sair sem salvar?"
+        message="As alterações feitas serão perdidas."
+        confirmLabel="Sair sem salvar"
+        cancelLabel="Continuar editando"
+        danger
+        onConfirm={onClose}
+        onCancel={() => setConfirmingClose(false)}
+      />
     </div>
   );
 }

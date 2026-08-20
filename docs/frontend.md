@@ -1,11 +1,11 @@
 # Frontend
 
-## Rotas (`src/App.tsx`)
+## Routes (`src/App.tsx`)
 
 ```
-/perfil/novo                fora do ProfileGate — tela de criar perfil
+/perfil/novo                outside ProfileGate — create profile screen
 
-<ProfileGate>                verifica get_active_profile, redireciona ou mostra seletor
+<ProfileGate>                checks get_active_profile, redirects or shows selector
   <AppShell>                 sidebar + <Outlet/>
     /                Dashboard.tsx
     /movimentacoes   Movimentacoes.tsx
@@ -15,62 +15,72 @@
     /configuracoes   Configuracoes.tsx
 ```
 
-`ProfileGate` (`src/components/layout/ProfileGate.tsx`) é o único lugar que decide entre: carregando / seletor de perfil inline / redirect pra `/perfil/novo` / renderizar o app de fato.
+`ProfileGate` (`src/components/layout/ProfileGate.tsx`) is the only place that decides between: loading / inline profile selector / redirect to `/perfil/novo` / actually rendering the app.
 
-## Páginas (`src/pages/`)
+## Pages (`src/pages/`)
 
-| Arquivo | Conteúdo |
+| File | Content |
 |---|---|
-| `CreateProfile.tsx` | nome + saldo inicial (opcional) |
-| `Dashboard.tsx` | cards de lucro/movimento/saldo, gráfico de fluxo (`FlowChart`), meta principal (`GoalDonut`), banner de conta pendente + linha "despesas previstas" |
-| `Movimentacoes.tsx` | tabela filtrável (ano dinâmico via `get_years_with_data`, mês, tags), export CSV |
-| `Contas.tsx` | lista de contas com status do mês/ano **atual real** (não segue o seletor do Dashboard) |
-| `ComprasEMetas.tsx` | duas seções (`kind='goal'` / `kind='purchase'`) usando o mesmo `TargetList` |
-| `TagsManager.tsx` | criar/renomear/excluir tag, com aviso de quantas movimentações usam antes de excluir |
-| `Configuracoes.tsx` | editar perfil atual, trocar/criar/excluir perfil, tema, abrir pasta de logs |
+| `CreateProfile.tsx` | name + starting balance (optional) |
+| `Dashboard.tsx` | income/expense/balance cards, flow chart (`FlowChart`), main goal (`GoalDonut`), pending bill banner + "projected expenses" row |
+| `Movimentacoes.tsx` | filterable table (dynamic year via `get_years_with_data`, month, tags), CSV export |
+| `Contas.tsx` | bill list with status for the **actual current** month/year (does not follow the Dashboard selector) |
+| `ComprasEMetas.tsx` | two sections (`kind='goal'` / `kind='purchase'`) using the same `TargetList` |
+| `TagsManager.tsx` | create/rename/delete tag, with a warning of how many transactions use it before deleting |
+| `Configuracoes.tsx` | edit current profile, switch/create/delete profile, theme, open logs folder |
 
-## Componentes reaproveitáveis (`src/components/`)
+## Reusable components (`src/components/`)
 
-| Arquivo | Uso |
+| File | Use |
 |---|---|
-| `MoneyInput.tsx` | **todo campo de valor em R$ usa este componente** — nunca `<input type="number">` cru. Máscara "dígito entra pela direita" (1 → R$0,01, mais um 0 → R$0,10), com backspace removendo o último dígito. Ver seção abaixo. |
-| `TagPicker.tsx` | grade de chips de tag — usado tanto pra atribuir tags (`TransactionModal`) quanto pra filtrar (`Movimentacoes`) |
-| `TransactionModal.tsx` | criar/editar entrada ou saída; toggle à vista/parcelado; checkbox "aplicar nome a todas as parcelas" quando edita uma parcela |
-| `InstallmentGroupModal.tsx` | ver/excluir parcelas de uma compra parcelada |
-| `TargetModal.tsx` / `TargetList.tsx` | modal e lista compartilhados entre metas e compras futuras |
-| `BillModal.tsx` / `PayBillModal.tsx` | criar/editar conta; registrar pagamento (valor + data) |
-| `TransactionRow.tsx` | linha de lançamento — mostra badge de parcela (clicável → abre `InstallmentGroupModal`) e chips de tag |
-| `YearMonthBar.tsx` | seletor ano/mês do Dashboard — anos vêm de `yearsWithData` + ano atual + ano selecionado (nunca uma janela fixa) |
-| `charts/FlowChart.tsx` / `charts/GoalDonut.tsx` | wrappers `react-chartjs-2` |
-| `layout/AppShell.tsx` | sidebar (nome do app + versão via `getVersion()`, nav, perfil atual) + `<Outlet/>` |
-| `layout/ProfileGate.tsx` | gate de rota (ver acima) |
-| `ToastContainer.tsx` | renderiza os toasts do `ToastContext` |
+| `MoneyInput.tsx` | **every R$ value field uses this component** — never a raw `<input type="number">`. "Digit enters from the right" mask (1 → R$0.01, one more 0 → R$0.10), with backspace removing the last digit. See section below. |
+| `TagPicker.tsx` | simple grid of tag chips — used only for the tag filter in `Movimentacoes` |
+| `TagAssignPicker.tsx` | variant used in `TransactionModal` to **assign** tags: shows up to 8 most-used tags (sorted by `usageCount`, keeping already-selected ones visible even outside the top 8) and a "+" button that opens a search among the remaining tags or creates a new one on the spot (`onCreate`) |
+| `TransactionModal.tsx` | create/edit an income or expense entry; one-time/installment toggle; "apply name to all installments" checkbox when editing an installment; uses `TagAssignPicker` |
+| `InstallmentGroupModal.tsx` | view/delete installments of an installment purchase |
+| `TargetModal.tsx` / `TargetList.tsx` | modal and list shared between goals and future purchases |
+| `BillModal.tsx` / `PayBillModal.tsx` | create/edit a bill; record a payment (amount + date) |
+| `TransactionRow.tsx` | entry row — shows an installment badge (clickable → opens `InstallmentGroupModal`) and tag chips |
+| `YearMonthBar.tsx` | Dashboard's year/month selector — years come from `yearsWithData` + current year + selected year (never a fixed window) |
+| `ConfirmModal.tsx` | generic confirmation modal (title + message + Confirm/Cancel, `danger` variant) — **replaces `window.confirm()`**, which doesn't work in this app's Tauri WebView2 (returns immediately without showing any dialog). Every "are you sure?" in the app goes through this |
+| `DeleteTransactionModal.tsx` | delete confirmation for an entry (Dashboard and Movimentações); if the transaction is part of an installment purchase, shows 3 options (cancel / this installment only / all installments) instead of `ConfirmModal`'s default Confirm/Cancel |
+| `charts/FlowChart.tsx` / `charts/GoalDonut.tsx` | `react-chartjs-2` wrappers |
+| `layout/AppShell.tsx` | sidebar (app name + version via `getVersion()`, nav, current profile) + `<Outlet/>` |
+| `layout/ProfileGate.tsx` | route gate (see above) |
+| `ToastContainer.tsx` | renders the toasts from `ToastContext` |
 
-## Hooks e contexto
+## Hooks and context
 
-| Arquivo | Conteúdo |
+| File | Content |
 |---|---|
-| `context/ProfileContext.tsx` | perfil ativo + `refresh()` — fonte da verdade, consumido via `hooks/useActiveProfile.ts` |
-| `context/ToastContext.tsx` | `useToast().show(message, "success"\|"error")` — sempre usar em vez de deixar erro silencioso em catch de `invoke` |
-| `hooks/useDashboard.ts` | busca `get_dashboard` pro (userId, year, month) atual, expõe `reload()` |
+| `context/ProfileContext.tsx` | active profile + `refresh()` — source of truth, consumed via `hooks/useActiveProfile.ts` |
+| `context/ToastContext.tsx` | `useToast().show(message, "success"\|"error")` — always use this instead of leaving a silent error in an `invoke` catch |
+| `hooks/useDashboard.ts` | fetches `get_dashboard` for the current (userId, year, month), exposes `reload()` |
+| `hooks/useEscapeClose.ts` | `useEscapeClose(active, onClose)` — closes a modal/dialog on Esc; used by every modal in the app (`TransactionModal`, `TargetModal`, `BillModal`, `PayBillModal`, `InstallmentGroupModal`, `ConfirmModal`) |
+
+## Modals: closing with unsaved data
+
+`TransactionModal`, `TargetModal`, `BillModal` and `PayBillModal` keep a snapshot of the initial values (via `useRef`, updated in the reset `useEffect`) and compute a `dirty` flag by comparing against the current state. Closing the modal (Esc, clicking outside, or the `✕` button) goes through an `attemptClose` function: if `dirty`, it opens a "leave without saving?" `ConfirmModal` instead of closing directly.
+
+**Careful when nesting a `ConfirmModal` inside another already-open modal:** the `ConfirmModal`'s backdrop calls `e.stopPropagation()` before `onCancel()` — without that, the click would bubble up to the parent modal's backdrop (which also closes on outside click) and immediately reopen the confirmation.
 
 ## `src/lib/`
 
-- `api.ts` — único lugar que chama `invoke()`. Tipos TS espelham as structs `camelCase` do Rust (ver `docs/commands.md`). Ao adicionar um comando novo, adicionar aqui também.
-- `format.ts` — `fmt()` (moeda pt-BR), `fmtDate()`, `fmtPct()`.
+- `api.ts` — the only place that calls `invoke()`. TS types mirror the Rust `camelCase` structs (see `docs/commands.md`). When adding a new command, add it here too.
+- `format.ts` — `fmt()` (pt-BR currency), `fmtDate()`, `fmtPct()`.
 
-## Convenção de tema (tokens)
+## Theme convention (tokens)
 
-Nunca usar cor fixa do Tailwind (`bg-slate-900`, `text-gray-400`, etc.) pra fundo/texto/borda — sempre os tokens definidos em `src/index.css` e mapeados via `@theme inline`:
+Never use a fixed Tailwind color (`bg-slate-900`, `text-gray-400`, etc.) for background/text/border — always the tokens defined in `src/index.css` and mapped via `@theme inline`:
 
-| Categoria | Utilitários |
+| Category | Utilities |
 |---|---|
-| Fundo | `bg-theme-bg` `bg-theme-surface` `bg-theme-raised` `bg-theme-hover` |
-| Borda | `border-theme-border` |
-| Texto | `text-theme-1` `text-theme-2` `text-theme-3` `text-theme-4` |
+| Background | `bg-theme-bg` `bg-theme-surface` `bg-theme-raised` `bg-theme-hover` |
+| Border | `border-theme-border` |
+| Text | `text-theme-1` `text-theme-2` `text-theme-3` `text-theme-4` |
 
-Cores de destaque (`violet-*`, `rose-*`, `emerald-*`, `amber-*`) são fixas de propósito (entradas, saídas, sucesso, alerta) — não precisam virar token.
+Accent colors (`violet-*`, `rose-*`, `emerald-*`, `amber-*`) are intentionally fixed (income, expenses, success, alert) — they don't need to become a token.
 
-## Sem i18n
+## No i18n
 
-O app é pt-BR only (ferramenta pessoal, ao contrário do `Personal.TOTP`). Strings ficam direto nos componentes; as poucas compartilhadas (nomes de mês) estão em `src/strings.ts`. Não introduzir `i18next` a menos que o escopo mude pra suportar outro idioma.
+The app is pt-BR only (a personal tool, unlike `Personal.TOTP`). Strings live directly in the components; the few shared ones (month names) are in `src/strings.ts`. Don't introduce `i18next` unless the scope changes to support another language.
