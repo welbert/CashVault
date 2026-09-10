@@ -103,6 +103,8 @@ CashVault/
 - **Multi-profile** → active profile is remembered across restarts (`config.last_active_user_id`); switching profiles lives in Settings
 - **Installments** → generated as N real monthly entries at creation time (not a single record); editing/deleting can target one installment or the whole group
 - **Goals/future purchases** → progress is always vs the profile's total accumulated balance, never resets per year
+- **Primary goal/purchase** → which one the Dashboard shows is chosen manually (★ in Metas & Compras, `targets.is_primary`), falling back to the first-created one of that kind if none is marked
+- **Dashboard** → cards are customizable (drag/resize/add/remove, per-profile `dashboard_layout` table); see `docs/frontend.md`'s "Dashboard customizável" section before touching `dashboard-cards/`
 - **Tags** → many-to-many with transactions; filter matches any of the selected tags (OR)
 - **Bills** → there's no standalone "paid" field — status is always derived from whether a transaction linked to that period exists; deleting a bill never deletes already-recorded transactions
 - **CSV export** → always respects the filter (year/month) selected on the Transactions screen

@@ -43,6 +43,7 @@ pub fn create_user(name: String, base_balance: Option<f64>, state: State<AppStat
     )
     .map_err(|e| e.to_string())?;
     db::seed_default_tags(&conn, id)?;
+    db::seed_default_dashboard_layout(&conn, id)?;
     drop(conn);
     *state.active_user_id.lock().unwrap() = Some(id);
     Ok(id)

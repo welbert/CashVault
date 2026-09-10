@@ -49,6 +49,16 @@ export function ComprasEMetas() {
     }
   }
 
+  async function handleSetPrimary(id: number) {
+    try {
+      await api.targets.setPrimary(id);
+      await reload();
+    } catch (err) {
+      logger.error("falha ao definir meta/compra principal", err);
+      toast.show("Não foi possível definir como principal.", "error");
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-theme-border bg-theme-surface p-6">
@@ -61,7 +71,13 @@ export function ComprasEMetas() {
             + adicionar
           </button>
         </div>
-        <TargetList targets={goals} onEdit={(t) => setModal({ kind: "goal", editing: t })} onDelete={handleDelete} emptyLabel="Nenhuma meta cadastrada ainda" />
+        <TargetList
+          targets={goals}
+          onEdit={(t) => setModal({ kind: "goal", editing: t })}
+          onDelete={handleDelete}
+          onSetPrimary={handleSetPrimary}
+          emptyLabel="Nenhuma meta cadastrada ainda"
+        />
       </section>
 
       <section className="rounded-2xl border border-theme-border bg-theme-surface p-6">
@@ -78,6 +94,7 @@ export function ComprasEMetas() {
           targets={purchases}
           onEdit={(t) => setModal({ kind: "purchase", editing: t })}
           onDelete={handleDelete}
+          onSetPrimary={handleSetPrimary}
           emptyLabel="Nenhuma compra futura cadastrada"
         />
       </section>

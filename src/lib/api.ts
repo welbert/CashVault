@@ -68,6 +68,7 @@ export type Target = {
   currentSaldo: number;
   pct: number;
   remaining: number;
+  isPrimary: boolean;
 };
 
 export type MonthSummary = {
@@ -101,6 +102,17 @@ export type DashboardData = {
   monthsWithData: number[];
   inByTag: TagAmount[];
   outByTag: TagAmount[];
+};
+
+/** Largura (1º número) e altura (2º) em passos de grid — ver GRID_COLS/SIZE_DIMENSIONS em dashboard-cards/catalog.ts. */
+export type CardSize = "1x1" | "1x2" | "1x3" | "2x1" | "2x2" | "2x3" | "3x1" | "3x2" | "3x3";
+
+export type DashboardLayoutItem = {
+  cardKey: string;
+  x: number;
+  y: number;
+  size: CardSize;
+  visible: boolean;
 };
 
 export type ImportResult = {
@@ -156,6 +168,7 @@ export const api = {
       call<number>("create_target", params),
     update: (params: { id: number; name: string; targetValue: number }) => call<void>("update_target", params),
     delete: (id: number) => call<void>("delete_target", { id }),
+    setPrimary: (id: number) => call<void>("set_primary_target", { id }),
   },
   tags: {
     list: (userId: number) => call<TagWithUsage[]>("list_tags", { userId }),
@@ -176,6 +189,10 @@ export const api = {
   reports: {
     getDashboard: (userId: number, year: number, month: number) =>
       call<DashboardData>("get_dashboard", { userId, year, month }),
+  },
+  dashboardLayout: {
+    get: (userId: number) => call<DashboardLayoutItem[]>("get_dashboard_layout", { userId }),
+    save: (userId: number, items: DashboardLayoutItem[]) => call<void>("save_dashboard_layout", { userId, items }),
   },
   export: {
     transactionsCsv: (params: TransactionListParams & { path: string }) =>

@@ -1,5 +1,6 @@
 pub mod backup;
 pub mod bills;
+pub mod dashboard_layout;
 pub mod export;
 pub mod import;
 pub mod logging;

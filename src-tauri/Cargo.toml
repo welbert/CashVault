@@ -1,6 +1,6 @@
 [package]
 name = "cashvault-app"
-version = "0.2.0"
+version = "0.3.0"
 description = "CashVault"
 authors = ["you"]
 edition = "2021"

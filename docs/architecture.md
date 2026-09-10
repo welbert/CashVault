@@ -48,8 +48,9 @@ App.tsx → <ProfileGate>
        │
        ▼
 Dashboard (route "/") → invoke("get_dashboard", {userId, year, month})
+                     → invoke("get_dashboard_layout", {userId}) for the customizable card grid
                      → invoke("list_bills", ...) for the pending bill alert
-                     → invoke("list_targets", {kind:"goal"}) for the main goal
+                     → invoke("list_targets", {kind:"goal"|"purchase"}) for the primary goal/purchase
 ```
 
 All the "which profile is active" state lives in `ProfileContext` (frontend) and is mirrored on the backend by `AppState.active_user_id` (in memory) + `config.last_active_user_id` (persisted — used to remember the profile across app restarts).

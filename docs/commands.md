@@ -35,10 +35,11 @@ Arguments are passed in camelCase on the JS side and automatically converted to 
 
 | Command | Signature |
 |---|---|
-| `list_targets` | `(user_id, kind?: "goal"\|"purchase") -> Vec<Target>` (already with `pct`/`remaining`) |
+| `list_targets` | `(user_id, kind?: "goal"\|"purchase") -> Vec<Target>` (already with `pct`/`remaining`/`is_primary`) |
 | `create_target` | `(user_id, kind, name, target_value) -> i64` |
 | `update_target` | `(id, name, target_value) -> ()` |
 | `delete_target` | `(id) -> ()` |
+| `set_primary_target` | `(id) -> ()` — clears `is_primary` for every other target of the same `(user_id, kind)`, then sets it on `id` (one transaction); this is what the Dashboard's "Meta/Compra principal" cards show |
 
 ## Tags (`commands/tags.rs`)
 
@@ -65,6 +66,13 @@ Arguments are passed in camelCase on the JS side and automatically converted to 
 `month_totals`, `month_history` (previous months of the year, with `pct_change`), `saldo_atual`, `saldo_history`, `year_series` (12 months, for the chart), `year_balance_up_to_month`, `years_with_data`, `months_with_data`, `in_by_tag`/`out_by_tag` (`Vec<TagAmount { label, total }>` for the selected month — one bucket per tag plus `"Sem tag"` for untagged transactions; a transaction with multiple tags counts in full toward each one, same OR semantics as the tag filter elsewhere; capped at the top 5 by value with the rest collapsed into `"Outros"`, see `TAG_CHART_LIMIT` in `commands/reports.rs`).
 
 All aggregation is done in SQL (Rust), rather than bringing raw rows to TS to sum — see `db.rs` (`month_totals`, `saldo_up_to`, `prev_year_month`, etc).
+
+## Dashboard layout (`commands/dashboard_layout.rs`)
+
+| Command | Signature | Notes |
+|---|---|---|
+| `get_dashboard_layout` | `(user_id) -> Vec<DashboardLayoutItem { card_key, x, y, size, visible }>` | if the profile has zero rows (predates the feature), seeds the default layout first (`db::seed_default_dashboard_layout`), then returns it — a dashboard never renders empty |
+| `save_dashboard_layout` | `(user_id, items: Vec<DashboardLayoutItem>) -> ()` | replaces the whole set of rows for that profile in one transaction (delete all + re-insert); called with a short debounce on every drag/resize/add/remove/show/hide in the Dashboard's edit mode — there's no separate "save" step |
 
 ## Export (`commands/export.rs`)
 

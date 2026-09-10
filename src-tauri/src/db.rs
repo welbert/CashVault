@@ -65,6 +65,7 @@ fn init_db(conn: &Connection) -> rusqlite::Result<()> {
             kind          TEXT    NOT NULL CHECK(kind IN ('goal','purchase')),
             name          TEXT    NOT NULL,
             target_value  REAL    NOT NULL,
+            is_primary    INTEGER NOT NULL DEFAULT 0,
             created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
             updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
         );
@@ -88,7 +89,21 @@ fn init_db(conn: &Connection) -> rusqlite::Result<()> {
             tag_id         INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
             PRIMARY KEY (transaction_id, tag_id)
         );
-        CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag ON transaction_tags(tag_id);",
+        CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag ON transaction_tags(tag_id);
+
+        -- `size` sem CHECK de propósito: o vocabulário de tamanhos (ex: '1x1'..'3x3')
+        -- é decisão de catálogo (src/components/dashboard-cards/catalog.ts), não de
+        -- schema — já mudou duas vezes: travar no banco custaria uma migração a cada vez.
+        CREATE TABLE IF NOT EXISTS dashboard_layout (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            card_key   TEXT    NOT NULL,
+            x          INTEGER NOT NULL,
+            y          INTEGER NOT NULL,
+            size       TEXT    NOT NULL,
+            visible    INTEGER NOT NULL DEFAULT 1,
+            UNIQUE(user_id, card_key)
+        );",
     )
 }
 
@@ -107,6 +122,34 @@ pub fn seed_default_tags(conn: &Connection, user_id: i64) -> Result<(), String> 
     for name in DEFAULT_TAGS {
         conn.execute("INSERT OR IGNORE INTO tags (user_id, name) VALUES (?1, ?2)", params![user_id, name])
             .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// (card_key, x, y, size) do layout padrão do Dashboard — ver decisão 14 de
+/// dashboard-customizavel-plano.md. Não tenta reproduzir pixel a pixel o
+/// layout assimétrico antigo, só usa os tamanhos do grid 3x3 em ordem de leitura.
+/// Donut/pizza (meta, compra, tag) são estreitos-e-altos ("1x2"); fluxo de caixa
+/// é largura cheia ("3x2"); o resto é compacto ("1x1").
+pub const DEFAULT_DASHBOARD_LAYOUT: &[(&str, i64, i64, &str)] = &[
+    ("lucro_mes", 0, 0, "1x1"),
+    ("variacao_mensal", 2, 0, "1x1"),
+    ("saldo_caixa", 4, 0, "1x1"),
+    ("movimento_mes", 0, 1, "1x1"),
+    ("meta_principal", 2, 1, "1x2"),
+    ("compra_principal", 4, 1, "1x2"),
+    ("fluxo_caixa", 0, 3, "3x2"),
+    ("entradas_por_tag", 0, 5, "1x2"),
+    ("saidas_por_tag", 2, 5, "1x2"),
+];
+
+pub fn seed_default_dashboard_layout(conn: &Connection, user_id: i64) -> Result<(), String> {
+    for (card_key, x, y, size) in DEFAULT_DASHBOARD_LAYOUT {
+        conn.execute(
+            "INSERT OR IGNORE INTO dashboard_layout (user_id, card_key, x, y, size) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![user_id, card_key, x, y, size],
+        )
+        .map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -134,6 +177,74 @@ fn migrate_db(conn: &Connection) {
     let _ = conn.execute("ALTER TABLE transactions ADD COLUMN bill_year INTEGER", []);
     let _ = conn.execute("ALTER TABLE transactions ADD COLUMN bill_month INTEGER", []);
     let _ = conn.execute("CREATE INDEX IF NOT EXISTS idx_transactions_bill ON transactions(bill_id, bill_year, bill_month)", []);
+    let _ = conn.execute("ALTER TABLE targets ADD COLUMN is_primary INTEGER NOT NULL DEFAULT 0", []);
+    // Índice parcial: no máximo 1 meta/compra principal por (perfil, tipo). Só pode
+    // viver aqui (não em init_db) — pra quem já tinha `targets` sem a coluna acima,
+    // o ALTER roda antes na mesma chamada, então a coluna já existe quando isto roda.
+    let _ = conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_targets_primary ON targets(user_id, kind) WHERE is_primary = 1",
+        [],
+    );
+    let _ = conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS dashboard_layout (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            card_key   TEXT    NOT NULL,
+            x          INTEGER NOT NULL,
+            y          INTEGER NOT NULL,
+            size       TEXT    NOT NULL,
+            visible    INTEGER NOT NULL DEFAULT 1,
+            UNIQUE(user_id, card_key)
+        );",
+    );
+    migrate_dashboard_layout_drop_size_check(conn);
+    // Correção pontual: perfis que semearam "Meta/Compra principal" e "Entradas/Saídas
+    // por tag" com tamanhos antigos (curtos ou largos demais, cortavam ou sobravam
+    // espaço) — só toca quem nunca customizou esses cards (ainda no default antigo).
+    let _ = conn.execute("UPDATE dashboard_layout SET x = 2, y = 1, size = '1x2' WHERE card_key = 'meta_principal' AND size = '1x1'", []);
+    let _ = conn.execute("UPDATE dashboard_layout SET x = 4, y = 1, size = '1x2' WHERE card_key = 'compra_principal' AND size = '1x1'", []);
+    let _ = conn.execute(
+        "UPDATE dashboard_layout SET x = 0, y = 5, size = '1x2' WHERE card_key = 'entradas_por_tag' AND size IN ('1x1','2x2')",
+        [],
+    );
+    let _ = conn.execute(
+        "UPDATE dashboard_layout SET x = 2, y = 5, size = '1x2' WHERE card_key = 'saidas_por_tag' AND size IN ('1x1','2x2')",
+        [],
+    );
+}
+
+/// `dashboard_layout.size` nasceu com `CHECK(size IN ('1x1','2x1','2x2'))`; o
+/// catálogo de tamanhos já mudou desde então (ver comentário na CREATE TABLE de
+/// `init_db`). SQLite não permite alterar um CHECK existente — reconstrói a
+/// tabela sem ele, preservando os dados, só para quem ainda tem o CHECK antigo.
+fn migrate_dashboard_layout_drop_size_check(conn: &Connection) {
+    let has_check: bool = conn
+        .query_row(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'dashboard_layout'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .map(|sql| sql.contains("CHECK"))
+        .unwrap_or(false);
+    if !has_check {
+        return;
+    }
+    let _ = conn.execute_batch(
+        "CREATE TABLE dashboard_layout_new (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            card_key   TEXT    NOT NULL,
+            x          INTEGER NOT NULL,
+            y          INTEGER NOT NULL,
+            size       TEXT    NOT NULL,
+            visible    INTEGER NOT NULL DEFAULT 1,
+            UNIQUE(user_id, card_key)
+        );
+        INSERT INTO dashboard_layout_new (id, user_id, card_key, x, y, size, visible)
+            SELECT id, user_id, card_key, x, y, size, visible FROM dashboard_layout;
+        DROP TABLE dashboard_layout;
+        ALTER TABLE dashboard_layout_new RENAME TO dashboard_layout;",
+    );
 }
 
 pub fn month_end_date(year: i64, month: i64) -> String {

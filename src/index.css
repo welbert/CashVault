@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-grid-layout/css/styles.css";
 
 /*
  * Temas: "dark" (Slate Graphite, padrão quando não há preferência salva),
@@ -108,8 +109,8 @@
   }
 
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
@@ -117,7 +118,27 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--theme-border);
+    background: var(--theme-4);
     border-radius: 10px;
   }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-3);
+  }
+}
+
+/*
+ * react-grid-layout (Dashboard customizável) — a lib vem com um placeholder
+ * vermelho fixo e handles de resize com borda hardcoded; sobrescrito aqui pra
+ * usar os tokens de tema em vez da aparência default da lib (docs/frontend.md).
+ */
+.react-grid-item.react-grid-placeholder {
+  background: var(--color-violet-400);
+  opacity: 0.15;
+  border-radius: 1rem;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  border-right: 2px solid var(--theme-3);
+  border-bottom: 2px solid var(--theme-3);
 }

@@ -65,6 +65,7 @@ pub struct Target {
     pub current_saldo: f64,
     pub pct: f64,
     pub remaining: f64,
+    pub is_primary: bool,
 }
 
 #[derive(Serialize)]
@@ -106,4 +107,14 @@ pub struct DashboardData {
     pub months_with_data: Vec<i64>,
     pub in_by_tag: Vec<TagAmount>,
     pub out_by_tag: Vec<TagAmount>,
+}
+
+#[derive(Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DashboardLayoutItem {
+    pub card_key: String,
+    pub x: i64,
+    pub y: i64,
+    pub size: String,
+    pub visible: bool,
 }

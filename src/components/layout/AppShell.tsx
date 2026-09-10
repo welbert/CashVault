@@ -34,9 +34,12 @@ export function AppShell() {
     <div className="flex h-screen bg-theme-bg text-theme-1">
       <aside className="flex w-56 shrink-0 flex-col border-r border-theme-border bg-theme-surface px-4 py-6">
         <div className="mb-8 px-2">
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-mono text-xs uppercase tracking-widest text-violet-300">CashVault</span>
-            {version && <span className="font-mono text-[10px] text-theme-4">v{version}</span>}
+          <div className="flex items-center gap-2">
+            <img src="/icon.png" alt="" className="h-6 w-6 shrink-0 rounded-md" />
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-xs uppercase tracking-widest text-violet-300">CashVault</span>
+              {version && <span className="font-mono text-[10px] text-theme-4">v{version}</span>}
+            </div>
           </div>
           <div className="mt-1 truncate text-sm font-semibold text-theme-1">{profile?.name}</div>
         </div>
@@ -57,7 +60,7 @@ export function AppShell() {
           ))}
         </nav>
       </aside>
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="min-w-0 flex-1 overflow-y-auto p-8">
         <Outlet />
       </main>
     </div>

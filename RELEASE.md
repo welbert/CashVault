@@ -1,9 +1,19 @@
 # CashVault — Unreleased
 
+---
+
+# CashVault — v0.3.0
+
 ## Features
 - **Feature:** mais opções de tema escuro em Configurações → Aparência. O padrão "Escuro" agora é uma paleta cinza neutra ("Slate Graphite") com destaque ciano; o roxo de antes continua disponível como tema separado, renomeado para "Violet Dark"; e tem também um novo tema "Midnight Blue" (azul). O destaque (botão primário, valores em foco, gráficos) muda de cor de acordo com o tema ativo.
 - **Feature:** Dashboard ganhou um card "Compra principal" ao lado do "Meta principal", mostrando a primeira compra futura cadastrada (mesmo padrão visual, progresso vs saldo acumulado).
 - **Feature:** os gráficos de pizza "Entradas/Saídas por tag" agora mostram o total no centro do donut; valores acima de R$ 10.000 aparecem abreviados ("R$ 12,3k", "R$ 1,2mi") pra caber no espaço.
+- **Feature:** Dashboard totalmente customizável — um botão "✎ Personalizar" liga um modo de edição em que dá pra arrastar, redimensionar (9 tamanhos, de compacto até largura cheia) e remover/adicionar qualquer um dos cards existentes pela gaveta "Adicionar card"; o layout é salvo automaticamente por perfil. "✓ Concluir" mantém as mudanças; "✕ Cancelar" desfaz tudo que foi feito desde que entrou no modo de edição.
+- **Feature:** ícone do app trocado (escudo com cifrão), com o mesmo ícone agora também aparecendo no canto superior esquerdo da barra lateral, ao lado do nome do app e do perfil ativo.
+- **Feature:** "Meta principal" e "Compra principal" do Dashboard agora são escolhidas manualmente — uma estrela (★) em cada linha da tela Metas & Compras marca qual meta/compra aparece lá; sem nenhuma marcada, continua usando a mais antiga cadastrada (comportamento de antes).
+- **Feature:** janela do app agora abre em 1550×960 (era 1280×860), com mais espaço pro novo Dashboard customizável.
+- **Feature:** no modo de edição do Dashboard, um contorno tracejado marca exatamente até onde a área é editável — útil quando a janela é maximizada numa tela larga e sobra espaço vazio ao lado dos cards.
+- **Feature:** barra de rolagem (vertical e horizontal) mais grossa e visível em toda a tela — a versão anterior (5px, quase transparente) era difícil de notar quando havia conteúdo pra rolar.
 
 ## Fixes
 - **Fix:** card "Lucro do mês" no Dashboard tinha cor de fundo fixa (hex do tema escuro) que não mudava no tema claro.
