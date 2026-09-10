@@ -31,6 +31,7 @@ export function Dashboard() {
   const { data, loading, reload } = useDashboard(profile?.id, year, month);
   const [monthTxns, setMonthTxns] = useState<Transaction[]>([]);
   const [primaryGoal, setPrimaryGoal] = useState<Target | null>(null);
+  const [primaryPurchase, setPrimaryPurchase] = useState<Target | null>(null);
   const [modal, setModal] = useState<{ kind: TransactionKind; editing: Transaction | null } | null>(null);
   const [viewGroupId, setViewGroupId] = useState<number | null>(null);
   const [availableTags, setAvailableTags] = useState<TagWithUsage[]>([]);
@@ -64,10 +65,12 @@ export function Dashboard() {
 
   useEffect(() => {
     if (!profile) return;
-    api.targets
-      .list(profile.id, "goal")
-      .then((targets) => setPrimaryGoal(targets[0] ?? null))
-      .catch((err) => logger.error("falha ao carregar meta", err));
+    Promise.all([api.targets.list(profile.id, "goal"), api.targets.list(profile.id, "purchase")])
+      .then(([goals, purchases]) => {
+        setPrimaryGoal(goals[0] ?? null);
+        setPrimaryPurchase(purchases[0] ?? null);
+      })
+      .catch((err) => logger.error("falha ao carregar metas/compras futuras", err));
   }, [profile, data]);
 
   if (!profile || loading || !data) {
@@ -142,6 +145,7 @@ export function Dashboard() {
   }
 
   const missingForGoal = primaryGoal ? Math.max(0, -primaryGoal.remaining) : 0;
+  const missingForPurchase = primaryPurchase ? Math.max(0, -primaryPurchase.remaining) : 0;
   const pendingBills = bills.filter((b) => !b.paid && (b.frequency === "monthly" || month >= (b.dueMonth ?? 1)));
   const previstas = pendingBills.reduce((sum, b) => sum + b.estimatedValue, 0);
 
@@ -164,7 +168,7 @@ export function Dashboard() {
       {pendingBills.length > 0 && (
         <Link
           to="/contas"
-          className="mb-4 flex items-center justify-between rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-3.5 text-sm text-amber-200 transition-colors hover:bg-amber-400/15"
+          className="mb-4 flex items-center justify-between rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-3.5 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-400/15"
         >
           <span>
             ⚠ {pendingBills.length} conta{pendingBills.length === 1 ? "" : "s"} pendente{pendingBills.length === 1 ? "" : "s"} —{" "}
@@ -176,18 +180,18 @@ export function Dashboard() {
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_1fr_1fr]">
         <div className="grid grid-cols-2 gap-3.5">
-          <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-[#2c1a52] via-[#170f28] to-[#100b1a] p-5">
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-theme-3">Lucro do mês</div>
+          <div className="rounded-2xl border border-violet-400/20 bg-theme-surface bg-gradient-to-br from-violet-500/15 via-transparent to-transparent p-5">
+            <div className="mb-2 font-mono text-xs uppercase tracking-wide text-theme-3">Lucro do mês</div>
             <div className="text-2xl font-bold text-violet-300">{fmt(data.monthTotals.lucro)}</div>
             <div className="mt-1 text-xs text-theme-4">recebido − despesas do mês</div>
             <div className="mt-3 flex max-h-40 flex-col gap-1 overflow-y-auto border-t border-theme-border pt-3">
               {data.monthHistory.length === 0 && <div className="text-xs text-theme-4">Nenhum mês anterior nesse ano</div>}
               {data.monthHistory.map((h) => (
                 <div key={h.month} className="flex items-center justify-between py-1">
-                  <span className="w-10 font-mono text-[11px] text-theme-4">{MONTH_NAMES[h.month - 1]}</span>
+                  <span className="w-10 font-mono text-xs text-theme-4">{MONTH_NAMES[h.month - 1]}</span>
                   <span className="flex-1 font-mono text-xs font-semibold text-theme-1">{fmt(h.lucro)}</span>
                   <span
-                    className={`font-mono text-[11px] font-bold ${
+                    className={`font-mono text-xs font-bold ${
                       h.pctChange == null ? "text-theme-4" : h.pctChange >= 0 ? "text-violet-300" : "text-rose-400"
                     }`}
                   >
@@ -199,7 +203,7 @@ export function Dashboard() {
           </div>
 
           <div className="rounded-2xl border border-theme-border bg-theme-surface p-5">
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-theme-3">Variação mensal</div>
+            <div className="mb-2 font-mono text-xs uppercase tracking-wide text-theme-3">Variação mensal</div>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {MONTH_NAMES.map((name, i) => {
                 const m = i + 1;
@@ -219,8 +223,8 @@ export function Dashboard() {
                       m === month ? "border border-violet-400/50 bg-violet-400/10" : "bg-theme-hover/40"
                     }`}
                   >
-                    <div className="font-mono text-[9px] uppercase text-theme-4">{name}</div>
-                    <div className={`font-mono text-[11.5px] font-bold ${pct == null ? "text-theme-4" : pct >= 0 ? "text-violet-300" : "text-rose-400"}`}>
+                    <div className="font-mono text-[10.5px] uppercase text-theme-4">{name}</div>
+                    <div className={`font-mono text-[13px] font-bold ${pct == null ? "text-theme-4" : pct >= 0 ? "text-violet-300" : "text-rose-400"}`}>
                       {pct == null ? "—" : fmtPct(pct)}
                     </div>
                   </div>
@@ -231,7 +235,7 @@ export function Dashboard() {
         </div>
 
         <div className="rounded-2xl border border-theme-border bg-theme-surface p-5">
-          <div className="mb-4 font-mono text-[11px] uppercase tracking-wide text-theme-3">Movimento do mês</div>
+          <div className="mb-4 font-mono text-xs uppercase tracking-wide text-theme-3">Movimento do mês</div>
           <div className="flex items-center justify-between border-b border-theme-border py-2.5">
             <span className="text-sm text-violet-300">↘ recebido</span>
             <span className="font-mono text-base font-semibold text-violet-300">{fmt(data.monthTotals.inTotal)}</span>
@@ -242,8 +246,8 @@ export function Dashboard() {
           </div>
           {pendingBills.length > 0 && (
             <div className="flex items-center justify-between border-t border-theme-border py-2.5">
-              <span className="text-sm text-amber-300">⏳ despesas previstas</span>
-              <span className="font-mono text-base font-semibold text-amber-300">{fmt(previstas)}</span>
+              <span className="text-sm text-amber-600">⏳ despesas previstas</span>
+              <span className="font-mono text-base font-semibold text-amber-600">{fmt(previstas)}</span>
             </div>
           )}
           <div className="mt-3 flex gap-2">
@@ -277,17 +281,17 @@ export function Dashboard() {
         </div>
 
         <div className="rounded-2xl border border-theme-border bg-theme-surface p-5">
-          <div className="mb-2 font-mono text-[11px] uppercase tracking-wide text-theme-3">Saldo em caixa</div>
+          <div className="mb-2 font-mono text-xs uppercase tracking-wide text-theme-3">Saldo em caixa</div>
           <div className="text-3xl font-bold text-theme-1">{fmt(data.saldoAtual)}</div>
           <div className="mt-1 text-xs text-theme-4">acumulado · ajustado pelo que entra e sai</div>
           <div className="mt-3 flex max-h-40 flex-col gap-1 overflow-y-auto border-t border-theme-border pt-3">
             {data.saldoHistory.length === 0 && <div className="text-xs text-theme-4">Nenhum mês anterior nesse ano</div>}
             {data.saldoHistory.map((h) => (
               <div key={h.month} className="flex items-center justify-between py-1">
-                <span className="w-10 font-mono text-[11px] text-theme-4">{MONTH_NAMES[h.month - 1]}</span>
+                <span className="w-10 font-mono text-xs text-theme-4">{MONTH_NAMES[h.month - 1]}</span>
                 <span className="flex-1 font-mono text-xs font-semibold text-theme-1">{fmt(h.saldo)}</span>
                 <span
-                  className={`font-mono text-[11px] font-bold ${
+                  className={`font-mono text-xs font-bold ${
                     h.pctChange == null ? "text-theme-4" : h.pctChange >= 0 ? "text-violet-300" : "text-rose-400"
                   }`}
                 >
@@ -299,10 +303,10 @@ export function Dashboard() {
         </div>
       </section>
 
-      <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.7fr_1fr]">
+      <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr_1fr]">
         <div className="rounded-2xl border border-theme-border bg-theme-surface p-6">
           <div className="mb-1 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wide text-theme-3">Fluxo de caixa · ano {year}</span>
+            <span className="font-mono text-xs uppercase tracking-wide text-theme-3">Fluxo de caixa · ano {year}</span>
             <div className="flex gap-4 text-xs text-theme-3">
               <span className="flex items-center gap-1.5">
                 <i className="h-2 w-2 rounded-full bg-violet-300" />
@@ -322,13 +326,13 @@ export function Dashboard() {
         </div>
 
         <div className="rounded-2xl border border-theme-border bg-theme-surface p-5 text-center">
-          <div className="mb-2 font-mono text-[11px] uppercase tracking-wide text-theme-3">Meta principal</div>
+          <div className="mb-2 font-mono text-xs uppercase tracking-wide text-theme-3">Meta principal</div>
           {primaryGoal ? (
             <>
               <GoalDonut pct={primaryGoal.pct} />
               <div className="mt-3 text-xs text-theme-3">
                 faltam para a meta
-                <strong className="mt-1 block text-xl font-semibold text-amber-300">{fmt(missingForGoal)}</strong>
+                <strong className="mt-1 block text-xl font-semibold text-amber-600">{fmt(missingForGoal)}</strong>
               </div>
               <div className="mt-4 flex justify-between border-t border-theme-border pt-3 text-xs text-theme-3">
                 <span>{primaryGoal.name}</span>
@@ -341,15 +345,36 @@ export function Dashboard() {
             <div className="py-6 text-sm text-theme-4">Nenhuma meta cadastrada ainda — crie uma em Metas &amp; Compras.</div>
           )}
         </div>
+
+        <div className="rounded-2xl border border-theme-border bg-theme-surface p-5 text-center">
+          <div className="mb-2 font-mono text-xs uppercase tracking-wide text-theme-3">Compra principal</div>
+          {primaryPurchase ? (
+            <>
+              <GoalDonut pct={primaryPurchase.pct} />
+              <div className="mt-3 text-xs text-theme-3">
+                faltam para a compra
+                <strong className="mt-1 block text-xl font-semibold text-amber-600">{fmt(missingForPurchase)}</strong>
+              </div>
+              <div className="mt-4 flex justify-between border-t border-theme-border pt-3 text-xs text-theme-3">
+                <span>{primaryPurchase.name}</span>
+                <strong className="text-theme-1">
+                  {fmt(primaryPurchase.currentSaldo)} de {fmt(primaryPurchase.targetValue)}
+                </strong>
+              </div>
+            </>
+          ) : (
+            <div className="py-6 text-sm text-theme-4">Nenhuma compra futura cadastrada ainda — crie uma em Metas &amp; Compras.</div>
+          )}
+        </div>
       </section>
 
       <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-theme-border bg-theme-surface p-5">
-          <div className="mb-4 font-mono text-[11px] uppercase tracking-wide text-theme-3">Entradas por tag · {MONTH_NAMES[month - 1]}</div>
+          <div className="mb-4 font-mono text-xs uppercase tracking-wide text-theme-3">Entradas por tag · {MONTH_NAMES[month - 1]}</div>
           <TagPieChart data={data.inByTag} />
         </div>
         <div className="rounded-2xl border border-theme-border bg-theme-surface p-5">
-          <div className="mb-4 font-mono text-[11px] uppercase tracking-wide text-theme-3">Saídas por tag · {MONTH_NAMES[month - 1]}</div>
+          <div className="mb-4 font-mono text-xs uppercase tracking-wide text-theme-3">Saídas por tag · {MONTH_NAMES[month - 1]}</div>
           <TagPieChart data={data.outByTag} />
         </div>
       </section>

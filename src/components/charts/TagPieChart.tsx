@@ -13,6 +13,14 @@ function colorFor(label: string, index: number) {
   return PALETTE[index % PALETTE.length];
 }
 
+// Espaço no centro do donut é curto (~70px úteis) — valores grandes viram
+// "R$ 12,3k" em vez de quebrar "R$ 12.345,67" ao meio.
+function fmtCompact(n: number): string {
+  if (n >= 1_000_000) return `R$ ${(n / 1_000_000).toFixed(1).replace(".", ",")}mi`;
+  if (n >= 10_000) return `R$ ${(n / 1000).toFixed(1).replace(".", ",")}k`;
+  return fmt(n);
+}
+
 export function TagPieChart({ data }: { data: TagAmount[] }) {
   if (data.length === 0) {
     return <div className="flex h-[190px] items-center justify-center text-center text-sm text-theme-4">Nenhum lançamento no período.</div>;
@@ -23,7 +31,7 @@ export function TagPieChart({ data }: { data: TagAmount[] }) {
 
   return (
     <div>
-      <div className="mx-auto h-[150px] w-[150px]">
+      <div className="relative mx-auto h-[150px] w-[150px]">
         <Doughnut
           data={{
             labels: data.map((d) => d.label),
@@ -45,6 +53,10 @@ export function TagPieChart({ data }: { data: TagAmount[] }) {
             },
           }}
         />
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
+          <div className="font-mono text-xs font-bold leading-tight text-theme-1">{fmtCompact(total)}</div>
+          <div className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-theme-3">total</div>
+        </div>
       </div>
       <div className="mt-4 flex flex-col gap-1.5">
         {data.map((d, i) => (

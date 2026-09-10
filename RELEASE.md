@@ -1,5 +1,14 @@
 # CashVault — Unreleased
 
+## Features
+- **Feature:** Dashboard ganhou um card "Compra principal" ao lado do "Meta principal", mostrando a primeira compra futura cadastrada (mesmo padrão visual, progresso vs saldo acumulado).
+- **Feature:** os gráficos de pizza "Entradas/Saídas por tag" agora mostram o total no centro do donut; valores acima de R$ 10.000 aparecem abreviados ("R$ 12,3k", "R$ 1,2mi") pra caber no espaço.
+
+## Fixes
+- **Fix:** card "Lucro do mês" no Dashboard tinha cor de fundo fixa (hex do tema escuro) que não mudava no tema claro.
+- **Fix:** textos em amarelo no Dashboard (alerta de conta pendente, "despesas previstas", "faltam para a meta") ficavam praticamente ilegíveis no tema claro — trocados de `amber-200`/`amber-300` para `amber-600`.
+- **Fix:** títulos dos cards e labels de mês/variação percentual no Dashboard estavam com fonte pequena demais comparado ao menu lateral.
+
 ---
 
 # CashVault — v0.2.0
