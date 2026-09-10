@@ -1,4 +1,4 @@
-import { save } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
 import { DeleteTransactionModal } from "../components/DeleteTransactionModal";
 import { InstallmentGroupModal } from "../components/InstallmentGroupModal";
@@ -27,6 +27,7 @@ export function Movimentacoes() {
   const [modal, setModal] = useState<{ kind: TransactionKind; editing: Transaction | null } | null>(null);
   const [viewGroupId, setViewGroupId] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [availableTags, setAvailableTags] = useState<TagWithUsage[]>([]);
   const [filterTagIds, setFilterTagIds] = useState<number[]>([]);
   const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
@@ -149,6 +150,35 @@ export function Movimentacoes() {
     }
   }
 
+  async function handleImport() {
+    if (!profile) return;
+    const path = await open({
+      title: "Importar movimentações",
+      multiple: false,
+      filters: [{ name: "CSV", extensions: ["csv"] }],
+    });
+    if (!path || Array.isArray(path)) return;
+    setImporting(true);
+    try {
+      const result = await api.import.transactionsCsv({ path, userId: profile.id });
+      if (result.errors.length > 0) {
+        logger.error("erros ao importar CSV", result.errors);
+      }
+      const errorSuffix =
+        result.errors.length > 0 ? ` (${result.errors.length} linha${result.errors.length === 1 ? "" : "s"} com erro — veja os logs)` : "";
+      toast.show(
+        `${result.imported} lançamento${result.imported === 1 ? "" : "s"} importado${result.imported === 1 ? "" : "s"}.${errorSuffix}`,
+        result.errors.length > 0 ? "error" : "success",
+      );
+      await reload();
+    } catch (err) {
+      logger.error("falha ao importar CSV", err);
+      toast.show("Não foi possível importar o CSV.", "error");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   const years = Array.from(new Set([...yearsWithData, now.getFullYear(), year])).sort((a, b) => a - b);
 
   return (
@@ -179,6 +209,13 @@ export function Movimentacoes() {
               </option>
             ))}
           </select>
+          <button
+            onClick={handleImport}
+            disabled={importing}
+            className="rounded-lg border border-theme-border bg-theme-surface px-4 py-2 text-sm font-semibold text-theme-1 hover:border-violet-400 disabled:opacity-60"
+          >
+            Importar CSV
+          </button>
           <button
             onClick={handleExport}
             disabled={exporting}

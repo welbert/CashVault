@@ -85,6 +85,11 @@ export type SaldoPoint = {
   pctChange: number | null;
 };
 
+export type TagAmount = {
+  label: string;
+  total: number;
+};
+
 export type DashboardData = {
   monthTotals: MonthSummary;
   monthHistory: MonthSummary[];
@@ -94,6 +99,13 @@ export type DashboardData = {
   yearBalanceUpToMonth: number;
   yearsWithData: number[];
   monthsWithData: number[];
+  inByTag: TagAmount[];
+  outByTag: TagAmount[];
+};
+
+export type ImportResult = {
+  imported: number;
+  errors: string[];
 };
 
 export type TransactionListParams = {
@@ -169,7 +181,18 @@ export const api = {
     transactionsCsv: (params: TransactionListParams & { path: string }) =>
       call<number>("export_transactions_csv", params),
   },
+  import: {
+    transactionsCsv: (params: { path: string; userId: number }) =>
+      call<ImportResult>("import_transactions_csv", params),
+  },
   logs: {
     open: () => call<void>("open_log_dir"),
+  },
+  backup: {
+    getFolder: () => call<string | null>("get_backup_folder"),
+    setFolder: (path: string) => call<void>("set_backup_folder", { path }),
+    clearFolder: () => call<void>("clear_backup_folder"),
+    run: () => call<void>("run_backup"),
+    import: (path: string) => call<void>("import_backup", { path }),
   },
 };

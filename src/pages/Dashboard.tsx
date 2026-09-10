@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { FlowChart } from "../components/charts/FlowChart";
 import { GoalDonut } from "../components/charts/GoalDonut";
+import { TagPieChart } from "../components/charts/TagPieChart";
 import { DeleteTransactionModal } from "../components/DeleteTransactionModal";
 import { InstallmentGroupModal } from "../components/InstallmentGroupModal";
 import { TransactionModal } from "../components/TransactionModal";
@@ -339,6 +340,17 @@ export function Dashboard() {
           ) : (
             <div className="py-6 text-sm text-theme-4">Nenhuma meta cadastrada ainda — crie uma em Metas &amp; Compras.</div>
           )}
+        </div>
+      </section>
+
+      <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+          <div className="mb-4 font-mono text-[11px] uppercase tracking-wide text-theme-3">Entradas por tag · {MONTH_NAMES[month - 1]}</div>
+          <TagPieChart data={data.inByTag} />
+        </div>
+        <div className="rounded-2xl border border-theme-border bg-theme-surface p-5">
+          <div className="mb-4 font-mono text-[11px] uppercase tracking-wide text-theme-3">Saídas por tag · {MONTH_NAMES[month - 1]}</div>
+          <TagPieChart data={data.outByTag} />
         </div>
       </section>
 

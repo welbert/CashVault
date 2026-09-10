@@ -178,6 +178,26 @@ pub fn month_totals(conn: &Connection, user_id: i64, year: i64, month: i64) -> R
     .map_err(|e| e.to_string())
 }
 
+/// Soma o valor das transações de um tipo no período por tag; transações sem
+/// tag nenhuma caem no bucket "Sem tag". Uma transação com N tags conta o
+/// valor cheio em cada uma delas (mesma semântica OR usada no filtro por tag).
+pub fn tag_breakdown(conn: &Connection, user_id: i64, kind: &str, start: &str, end: &str) -> Result<Vec<(String, f64)>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT COALESCE(tg.name, 'Sem tag') AS label, SUM(tx.amount) AS total
+             FROM transactions tx
+             LEFT JOIN transaction_tags tt ON tt.transaction_id = tx.id
+             LEFT JOIN tags tg ON tg.id = tt.tag_id
+             WHERE tx.user_id = ?1 AND tx.type = ?2 AND tx.date >= ?3 AND tx.date <= ?4
+             GROUP BY tg.id",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map(params![user_id, kind, start, end], |row| Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?)))
+        .map_err(|e| e.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
 pub fn years_with_data(conn: &Connection, user_id: i64) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare("SELECT DISTINCT CAST(strftime('%Y', date) AS INTEGER) FROM transactions WHERE user_id = ?1 ORDER BY 1")

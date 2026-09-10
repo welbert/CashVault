@@ -33,3 +33,11 @@ Edit each file manually at the indicated line:
 | `src-tauri/tauri.conf.json` | 4 | `"version": "0.2.0"` |
 
 > **Note:** avoid using PowerShell `Set-Content` to replace the version — it writes UTF-8 with BOM in PS 5.1, which breaks the Tauri JSON parser at build time.
+
+## Release Notes
+
+`RELEASE.md` (repo root) tracks changes per version, grouped under `## Features` / `## Fixes` (only add the subheadings a version actually has entries for):
+- `**Fix:**` for bug fixes, under `## Fixes`
+- `**Feature:**` for new functionality, under `## Features`
+
+Work in progress always lives under a `# CashVault — Unreleased` section at the top of the file — created the first time a fix/feature needs it. In the release commit that bumps the version, that `# CashVault — Unreleased` header is renamed to the actual version (`# CashVault — vX.Y.Z`), **and a fresh empty `# CashVault — Unreleased` header is added back above it** so the next round of changes has somewhere to go. `RELEASE.md` should always start with an `Unreleased` section (empty or not), followed by the versioned sections newest-first.

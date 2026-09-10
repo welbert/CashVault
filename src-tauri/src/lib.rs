@@ -3,12 +3,14 @@ mod db;
 mod models;
 
 use rusqlite::{params, Connection};
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::Manager;
 
 pub struct AppState {
     pub db: Mutex<Connection>,
     pub active_user_id: Mutex<Option<i64>>,
+    pub db_path: PathBuf,
 }
 
 fn resolve_active_user_id(conn: &Connection) -> Option<i64> {
@@ -25,15 +27,18 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir().expect("sem diretório de dados do app");
             std::fs::create_dir_all(&data_dir).expect("falha ao criar diretório de dados");
-            let conn = db::open_connection(data_dir.join("gerenciador.db")).expect("falha ao abrir o banco");
+            let db_path = data_dir.join("gerenciador.db");
+            let conn = db::open_connection(db_path.clone()).expect("falha ao abrir o banco");
             let active_user_id = resolve_active_user_id(&conn);
 
             app.manage(AppState {
                 db: Mutex::new(conn),
                 active_user_id: Mutex::new(active_user_id),
+                db_path,
             });
             Ok(())
         })
@@ -69,9 +74,15 @@ pub fn run() {
             commands::bills::delete_bill,
             commands::bills::pay_bill,
             commands::export::export_transactions_csv,
+            commands::import::import_transactions_csv,
             commands::reports::get_dashboard,
             commands::logging::write_log,
             commands::logging::open_log_dir,
+            commands::backup::get_backup_folder,
+            commands::backup::set_backup_folder,
+            commands::backup::clear_backup_folder,
+            commands::backup::run_backup,
+            commands::backup::import_backup,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

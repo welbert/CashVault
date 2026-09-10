@@ -88,6 +88,13 @@ pub struct SaldoPoint {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TagAmount {
+    pub label: String,
+    pub total: f64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DashboardData {
     pub month_totals: MonthSummary,
     pub month_history: Vec<MonthSummary>,
@@ -97,4 +104,6 @@ pub struct DashboardData {
     pub year_balance_up_to_month: f64,
     pub years_with_data: Vec<i64>,
     pub months_with_data: Vec<i64>,
+    pub in_by_tag: Vec<TagAmount>,
+    pub out_by_tag: Vec<TagAmount>,
 }

@@ -62,13 +62,17 @@ Arguments are passed in camelCase on the JS side and automatically converted to 
 ## Reports (`commands/reports.rs`)
 
 `get_dashboard(user_id, year, month) -> DashboardData` — a single round-trip with everything the Dashboard needs:
-`month_totals`, `month_history` (previous months of the year, with `pct_change`), `saldo_atual`, `saldo_history`, `year_series` (12 months, for the chart), `year_balance_up_to_month`, `years_with_data`, `months_with_data`.
+`month_totals`, `month_history` (previous months of the year, with `pct_change`), `saldo_atual`, `saldo_history`, `year_series` (12 months, for the chart), `year_balance_up_to_month`, `years_with_data`, `months_with_data`, `in_by_tag`/`out_by_tag` (`Vec<TagAmount { label, total }>` for the selected month — one bucket per tag plus `"Sem tag"` for untagged transactions; a transaction with multiple tags counts in full toward each one, same OR semantics as the tag filter elsewhere; capped at the top 5 by value with the rest collapsed into `"Outros"`, see `TAG_CHART_LIMIT` in `commands/reports.rs`).
 
 All aggregation is done in SQL (Rust), rather than bringing raw rows to TS to sum — see `db.rs` (`month_totals`, `saldo_up_to`, `prev_year_month`, etc).
 
 ## Export (`commands/export.rs`)
 
 `export_transactions_csv(path, user_id, year?, month?, start_date?, end_date?) -> usize` — same date filter as `list_transactions` (but no tag filter). Uses the `csv` crate (correctly escapes commas/quotes). Path is chosen on the frontend via `@tauri-apps/plugin-dialog`.
+
+## Import (`commands/import.rs`)
+
+`import_transactions_csv(path, user_id) -> ImportResult { imported: usize, errors: Vec<String> }` — reads the same `tipo,nome,data,valor[,parcela]` header as the export (column order doesn't matter, `parcela` is ignored — every row becomes a plain one-time transaction, never an installment group). Tolerant of CSVs edited in Excel pt-BR: auto-detects `;` as the delimiter, accepts `1.234,56` or `1234.56` for `valor` and `dd/mm/aaaa` or `aaaa-mm-dd` for `data`, strips a UTF-8 BOM if present. Runs inside a single SQL transaction; invalid rows are skipped and reported in `errors` (1-indexed CSV line number) instead of aborting the whole import.
 
 ## Logs (`commands/logging.rs`)
 

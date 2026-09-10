@@ -2,6 +2,15 @@
 
 ---
 
+# CashVault — v0.2.0
+
+## Features
+- **Feature:** seção "Backup" em Configurações — escolha uma pasta e o app copia automaticamente o `.db` pra lá (sobrescrevendo o backup anterior) toda vez que o app é aberto, com opção de trocar a pasta ou desativar o backup automático; também é possível importar um arquivo `.db` escolhido para restaurar o banco (substitui todos os dados atuais, pede confirmação antes e reinicia o app sozinho depois de importar).
+- **Feature:** botão "Importar CSV" em Movimentações, ao lado do "Exportar CSV" — lê o mesmo formato que a exportação gera e cria os lançamentos no perfil atual, tolerando CSV editado no Excel em pt-BR (separador `;`, valor com vírgula decimal, data `dd/mm/aaaa`); linhas inválidas são puladas e reportadas, sem travar o restante da importação.
+- **Feature:** dois gráficos de pizza no Dashboard — "Entradas por tag" e "Saídas por tag" do mês selecionado. Lançamentos sem tag aparecem como "Sem tag"; a partir da 6ª tag as demais são somadas em "Outros" pra não poluir o gráfico.
+
+---
+
 # CashVault — v0.1.1
 
 ## Features

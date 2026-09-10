@@ -1,5 +1,7 @@
+pub mod backup;
 pub mod bills;
 pub mod export;
+pub mod import;
 pub mod logging;
 pub mod reports;
 pub mod tags;

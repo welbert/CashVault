@@ -1,7 +1,9 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useToast } from "../../context/ToastContext";
 import { useActiveProfile } from "../../hooks/useActiveProfile";
+import { api } from "../../lib/api";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", end: true },
@@ -14,10 +16,18 @@ const NAV_ITEMS = [
 
 export function AppShell() {
   const { profile } = useActiveProfile();
+  const toast = useToast();
   const [version, setVersion] = useState("");
 
   useEffect(() => {
     getVersion().then(setVersion);
+  }, []);
+
+  useEffect(() => {
+    api.backup.run().catch(() => {
+      toast.show("Não foi possível fazer backup do banco de dados.", "error");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

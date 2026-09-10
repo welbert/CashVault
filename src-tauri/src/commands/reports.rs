@@ -1,7 +1,27 @@
 use crate::db;
-use crate::models::{DashboardData, MonthSummary, SaldoPoint};
+use crate::models::{DashboardData, MonthSummary, SaldoPoint, TagAmount};
 use crate::AppState;
 use tauri::State;
+
+/// Quantas fatias individuais o gráfico de pizza mostra antes de agrupar o
+/// resto em "Outros" (evita pizza ilegível quando há muitas tags).
+const TAG_CHART_LIMIT: usize = 5;
+
+fn top_with_others(mut items: Vec<(String, f64)>) -> Vec<TagAmount> {
+    items.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    if items.len() <= TAG_CHART_LIMIT {
+        return items.into_iter().map(|(label, total)| TagAmount { label, total }).collect();
+    }
+    let mut result: Vec<TagAmount> = items[..TAG_CHART_LIMIT]
+        .iter()
+        .map(|(label, total)| TagAmount { label: label.clone(), total: *total })
+        .collect();
+    let others_total: f64 = items[TAG_CHART_LIMIT..].iter().map(|(_, total)| total).sum();
+    if others_total > 0.0 {
+        result.push(TagAmount { label: "Outros".to_string(), total: others_total });
+    }
+    result
+}
 
 fn pct_change(current: f64, previous: f64) -> Option<f64> {
     if previous == 0.0 {
@@ -66,6 +86,10 @@ pub fn get_dashboard(user_id: i64, year: i64, month: i64, state: State<AppState>
     let years_with_data = db::years_with_data(&conn, user_id)?;
     let months_with_data = db::months_with_data(&conn, user_id, year)?;
 
+    let month_start = format!("{year:04}-{month:02}-01");
+    let in_by_tag = top_with_others(db::tag_breakdown(&conn, user_id, "in", &month_start, &end_of_month)?);
+    let out_by_tag = top_with_others(db::tag_breakdown(&conn, user_id, "out", &month_start, &end_of_month)?);
+
     Ok(DashboardData {
         month_totals,
         month_history,
@@ -75,5 +99,7 @@ pub fn get_dashboard(user_id: i64, year: i64, month: i64, state: State<AppState>
         year_balance_up_to_month,
         years_with_data,
         months_with_data,
+        in_by_tag,
+        out_by_tag,
     })
 }
