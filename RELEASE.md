@@ -1,6 +1,7 @@
 # CashVault — Unreleased
 
 ## Features
+- **Feature:** mais opções de tema escuro em Configurações → Aparência. O padrão "Escuro" agora é uma paleta cinza neutra ("Slate Graphite") com destaque ciano; o roxo de antes continua disponível como tema separado, renomeado para "Violet Dark"; e tem também um novo tema "Midnight Blue" (azul). O destaque (botão primário, valores em foco, gráficos) muda de cor de acordo com o tema ativo.
 - **Feature:** Dashboard ganhou um card "Compra principal" ao lado do "Meta principal", mostrando a primeira compra futura cadastrada (mesmo padrão visual, progresso vs saldo acumulado).
 - **Feature:** os gráficos de pizza "Entradas/Saídas por tag" agora mostram o total no centro do donut; valores acima de R$ 10.000 aparecem abreviados ("R$ 12,3k", "R$ 1,2mi") pra caber no espaço.
 

@@ -74,6 +74,16 @@ All aggregation is done in SQL (Rust), rather than bringing raw rows to TS to su
 
 `import_transactions_csv(path, user_id) -> ImportResult { imported: usize, errors: Vec<String> }` — reads the same `tipo,nome,data,valor[,parcela]` header as the export (column order doesn't matter, `parcela` is ignored — every row becomes a plain one-time transaction, never an installment group). Tolerant of CSVs edited in Excel pt-BR: auto-detects `;` as the delimiter, accepts `1.234,56` or `1234.56` for `valor` and `dd/mm/aaaa` or `aaaa-mm-dd` for `data`, strips a UTF-8 BOM if present. Runs inside a single SQL transaction; invalid rows are skipped and reported in `errors` (1-indexed CSV line number) instead of aborting the whole import.
 
+## Backup (`commands/backup.rs`)
+
+| Command | Signature | Notes |
+|---|---|---|
+| `get_backup_folder` | `() -> Option<String>` | reads `config.backup_folder` |
+| `set_backup_folder` | `(path) -> ()` | upserts `config.backup_folder`; chosen on the frontend via `@tauri-apps/plugin-dialog`'s directory picker |
+| `clear_backup_folder` | `() -> ()` | deletes the `config.backup_folder` row — disables automatic backup |
+| `run_backup` | `() -> ()` | no-op if no folder is configured; otherwise copies the live `.db` file to `<folder>/cashvault-backup.db`, overwriting the previous backup. Called once on every app startup (`AppShell` mount) and immediately after picking/changing the folder in Settings |
+| `import_backup` | `(path) -> ()` | validates the chosen `.db` file (must have a `users` table) before touching anything, then swaps `AppState`'s live connection for an in-memory one and overwrites the real db file with it — the frontend must call `relaunch()` (`@tauri-apps/plugin-process`) right after, since the in-memory swap leaves the running process with a dead connection until restart |
+
 ## Logs (`commands/logging.rs`)
 
 | Command | Notes |

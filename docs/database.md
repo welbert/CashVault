@@ -91,4 +91,4 @@ New profiles are born with 8 default tags (`db::DEFAULT_TAGS`, seeded in `create
 ```
 config(key TEXT PRIMARY KEY, value TEXT NOT NULL)
 ```
-Today it only holds `last_active_user_id` (profile remembered across restarts). Same pattern as `Personal.TOTP`.
+Today it holds `last_active_user_id` (profile remembered across restarts) and `backup_folder` (chosen folder for automatic `.db` backup, see `commands/backup.rs`). Same pattern as `Personal.TOTP`.

@@ -95,7 +95,7 @@ export function TagsManager() {
                     autoFocus
                     className="flex-1 rounded-lg border border-theme-border bg-theme-bg px-3 py-1.5 text-sm text-theme-1 outline-none focus:border-violet-400"
                   />
-                  <button type="submit" className="rounded-lg bg-gradient-to-br from-violet-700 to-violet-400 px-3 py-1.5 text-xs font-semibold text-theme-bg">
+                  <button type="submit" className="rounded-lg bg-gradient-to-br from-violet-700 to-violet-400 px-3 py-1.5 text-xs font-semibold text-theme-bg transition hover:brightness-110">
                     Salvar
                   </button>
                   <button

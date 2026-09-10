@@ -20,7 +20,7 @@ See [docs/versioning.md](docs/versioning.md) for semver rules.
 
 ## Theme rule (tokens)
 
-Never hardcode a Tailwind background/text/border color (`bg-slate-*`, `text-gray-*`...) — always use the `bg-theme-*` / `text-theme-*` / `border-theme-border` tokens defined in `src/index.css`. Accent colors (`violet`, `rose`, `emerald`, `amber`) are intentional and stay as they are. See `docs/frontend.md`.
+Never hardcode a Tailwind background/text/border color (`bg-slate-*`, `text-gray-*`...) — always use the `bg-theme-*` / `text-theme-*` / `border-theme-border` tokens defined in `src/index.css`. `rose`/`emerald`/`amber` are semantic accent colors and stay fixed regardless of theme; `violet` is the app's brand accent and **does** vary per theme (`src/index.css` redefines `--color-violet-300/400/500/700` per `[data-theme]`) — component code still just uses plain `violet-*` classes, never a hardcoded hex. Every clickable element also needs a `hover:` state — see the two established patterns in `docs/frontend.md`.
 
 ## Release Notes
 
@@ -79,7 +79,7 @@ CashVault/
 │   │   ├── lib.rs               # AppState, setup, command registration
 │   │   ├── db.rs                # schema (init_db + migrate_db), aggregations (balance, totals)
 │   │   ├── models.rs            # serialized structs (camelCase) returned to the frontend
-│   │   └── commands/            # one file per domain (users, transactions, targets, tags, bills, reports, export, logging)
+│   │   └── commands/            # one file per domain (users, transactions, targets, tags, bills, reports, export, import, backup, logging)
 │   ├── Cargo.toml
 │   ├── tauri.conf.json          # identifier com.welbert.cashvault, 1280x860 window
 │   └── capabilities/default.json

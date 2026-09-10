@@ -42,7 +42,7 @@ export function ConfirmModal({ open, title, message, confirmLabel = "Confirmar",
           </button>
           <button
             onClick={onConfirm}
-            className={`rounded-lg px-4 py-2 text-sm font-bold text-theme-bg ${
+            className={`rounded-lg px-4 py-2 text-sm font-bold text-theme-bg transition hover:brightness-110 ${
               danger ? "bg-gradient-to-br from-rose-600 to-rose-400" : "bg-gradient-to-br from-violet-700 to-violet-400"
             }`}
           >

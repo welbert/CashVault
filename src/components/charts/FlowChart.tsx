@@ -3,18 +3,30 @@ import { Line } from "react-chartjs-2";
 import { MonthSummary } from "../../lib/api";
 import { fmt } from "../../lib/format";
 import { MONTH_NAMES } from "../../strings";
+import { themeColor } from "../../theme";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const value = parseInt(clean, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function FlowChart({ series }: { series: MonthSummary[] }) {
+  const accent = themeColor("--color-violet-300", "#c4b5fd");
+
   const data = {
     labels: MONTH_NAMES.map((m) => m.toLowerCase()),
     datasets: [
       {
         label: "Entradas",
         data: series.map((m) => m.inTotal),
-        borderColor: "#c9a3ff",
-        backgroundColor: "rgba(184,145,245,0.2)",
+        borderColor: accent,
+        backgroundColor: hexToRgba(accent, 0.2),
         fill: true,
         tension: 0.42,
         borderWidth: 2.5,

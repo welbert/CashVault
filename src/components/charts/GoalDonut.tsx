@@ -1,10 +1,12 @@
 import { ArcElement, Chart as ChartJS, Tooltip } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+import { themeColor } from "../../theme";
 
 ChartJS.register(ArcElement, Tooltip);
 
 export function GoalDonut({ pct }: { pct: number }) {
   const clamped = Math.min(100, Math.max(0, pct));
+  const accent = themeColor("--color-violet-300", "#c4b5fd");
   return (
     <div className="relative mx-auto h-[190px] w-[190px]">
       <Doughnut
@@ -12,7 +14,7 @@ export function GoalDonut({ pct }: { pct: number }) {
           datasets: [
             {
               data: [clamped, 100 - clamped],
-              backgroundColor: ["#c9a3ff", "rgba(255,255,255,0.06)"],
+              backgroundColor: [accent, "rgba(255,255,255,0.06)"],
               borderWidth: 0,
             },
           ],

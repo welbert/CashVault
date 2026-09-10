@@ -56,7 +56,7 @@ export function CreateProfile() {
           <button
             type="submit"
             disabled={saving}
-            className="mt-1.5 rounded-xl bg-gradient-to-br from-violet-700 to-violet-400 py-3 text-sm font-bold text-theme-bg disabled:opacity-60"
+            className="mt-1.5 rounded-xl bg-gradient-to-br from-violet-700 to-violet-400 py-3 text-sm font-bold text-theme-bg transition hover:brightness-110 disabled:opacity-60 disabled:hover:brightness-100"
           >
             Começar
           </button>

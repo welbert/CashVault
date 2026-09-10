@@ -1,7 +1,35 @@
 @import "tailwindcss";
 
-/* ── Theme tokens — paleta violeta do painel financeiro original ────── */
+/*
+ * Temas: "dark" (Slate Graphite, padrão quando não há preferência salva),
+ * "violet-dark", "midnight-blue" e "light". Cada bloco redefine os tokens
+ * neutros (bg/surface/raised/hover/texto) E as variantes de roxo que o
+ * Tailwind gera (violet-300/400/500/700) — o app inteiro já usa essas
+ * classes pra botão primário, valores em destaque e bordas ativas, então
+ * sobrescrever essas variáveis aqui re-tematiza tudo sem precisar trocar
+ * nenhuma classe `violet-*` nos componentes (ver docs/frontend.md).
+ */
+
+/* ── Slate Graphite — tema escuro padrão ("Escuro") ──────────────────── */
 :root {
+  --theme-bg:      #0a0a0c;
+  --theme-surface: #131316;
+  --theme-raised:  #1a1a1f;
+  --theme-hover:   #222227;
+  --theme-border:  rgba(255, 255, 255, 0.08);
+  --theme-1:       #f0f0f2;
+  --theme-2:       #c7c7cd;
+  --theme-3:       #9d9da5;
+  --theme-4:       #68686f;
+
+  --color-violet-300: #67e8f9;
+  --color-violet-400: #22d3ee;
+  --color-violet-500: #06b6d4;
+  --color-violet-700: #0e7490;
+}
+
+/* ── Violet Dark — o tema original, agora um dos temas escuros opcionais ── */
+[data-theme="violet-dark"] {
   --theme-bg:      #0b0713;
   --theme-surface: #150f21;
   --theme-raised:  #1c1230;
@@ -11,8 +39,32 @@
   --theme-2:       #cbbfe0;
   --theme-3:       #a396b8;
   --theme-4:       #6c6084;
+
+  --color-violet-300: #c4b5fd;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-700: #6d28d9;
 }
 
+/* ── Midnight Blue ────────────────────────────────────────────────────── */
+[data-theme="midnight-blue"] {
+  --theme-bg:      #070b13;
+  --theme-surface: #0f1521;
+  --theme-raised:  #16202f;
+  --theme-hover:   #1c2a3d;
+  --theme-border:  rgba(255, 255, 255, 0.08);
+  --theme-1:       #ecf1f9;
+  --theme-2:       #bfd0e0;
+  --theme-3:       #96a8b8;
+  --theme-4:       #607084;
+
+  --color-violet-300: #93c5fd;
+  --color-violet-400: #60a5fa;
+  --color-violet-500: #3b82f6;
+  --color-violet-700: #1d4ed8;
+}
+
+/* ── Light — mantém o roxo original como destaque ────────────────────── */
 [data-theme="light"] {
   --theme-bg:      #f7f5fb;
   --theme-surface: #ffffff;
@@ -23,6 +75,11 @@
   --theme-2:       #4a3d63;
   --theme-3:       #6c6084;
   --theme-4:       #a396b8;
+
+  --color-violet-300: #c4b5fd;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-700: #6d28d9;
 }
 
 @theme inline {

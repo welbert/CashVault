@@ -10,6 +10,14 @@ import { api, UserSummary } from "../lib/api";
 import { logger } from "../logger";
 import { getTheme, setTheme, Theme } from "../theme";
 
+const THEME_OPTIONS: { value: Theme; label: string }[] = [
+  { value: "system", label: "Sistema" },
+  { value: "dark", label: "Escuro" },
+  { value: "violet-dark", label: "Violet Dark" },
+  { value: "midnight-blue", label: "Midnight Blue" },
+  { value: "light", label: "Claro" },
+];
+
 export function Configuracoes() {
   const { profile, switchProfile, refresh } = useActiveProfile();
   const toast = useToast();
@@ -188,7 +196,7 @@ export function Configuracoes() {
             <MoneyInput value={baseBalance} onChange={setBaseBalance} />
           </label>
           {message && <div className="text-sm text-violet-300">{message}</div>}
-          <button type="submit" className="self-start rounded-xl bg-gradient-to-br from-violet-700 to-violet-400 px-6 py-2.5 text-sm font-bold text-theme-bg">
+          <button type="submit" className="self-start rounded-xl bg-gradient-to-br from-violet-700 to-violet-400 px-6 py-2.5 text-sm font-bold text-theme-bg transition hover:brightness-110">
             Salvar
           </button>
         </form>
@@ -232,16 +240,18 @@ export function Configuracoes() {
 
       <section className="rounded-2xl border border-theme-border bg-theme-surface p-6">
         <h2 className="mb-4 text-lg font-semibold text-theme-1">Aparência</h2>
-        <div className="flex gap-2">
-          {(["system", "dark", "light"] as Theme[]).map((t) => (
+        <div className="flex flex-wrap gap-2">
+          {THEME_OPTIONS.map((opt) => (
             <button
-              key={t}
-              onClick={() => handleThemeChange(t)}
-              className={`rounded-lg border px-4 py-2 text-sm capitalize ${
-                theme === t ? "border-violet-400 bg-violet-400/10 text-theme-1" : "border-theme-border bg-theme-bg text-theme-3"
+              key={opt.value}
+              onClick={() => handleThemeChange(opt.value)}
+              className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+                theme === opt.value
+                  ? "border-violet-400 bg-violet-400/10 text-theme-1"
+                  : "border-theme-border bg-theme-bg text-theme-3 hover:border-violet-400 hover:text-theme-1"
               }`}
             >
-              {t === "system" ? "sistema" : t === "dark" ? "escuro" : "claro"}
+              {opt.label}
             </button>
           ))}
         </div>

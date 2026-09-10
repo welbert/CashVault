@@ -204,7 +204,7 @@ export function TransactionModal({
                   className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
                     payType === "avista"
                       ? "border-transparent bg-gradient-to-br from-violet-700 to-violet-400 text-theme-bg"
-                      : "border-theme-border bg-theme-bg text-theme-3"
+                      : "border-theme-border bg-theme-bg text-theme-3 hover:border-violet-400/50"
                   }`}
                 >
                   À vista
@@ -215,7 +215,7 @@ export function TransactionModal({
                   className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
                     payType === "parcelado"
                       ? "border-transparent bg-gradient-to-br from-violet-700 to-violet-400 text-theme-bg"
-                      : "border-theme-border bg-theme-bg text-theme-3"
+                      : "border-theme-border bg-theme-bg text-theme-3 hover:border-violet-400/50"
                   }`}
                 >
                   Parcelado
@@ -248,7 +248,7 @@ export function TransactionModal({
           <button
             type="submit"
             disabled={saving}
-            className={`mt-1.5 rounded-xl py-3 text-sm font-bold text-theme-bg disabled:opacity-60 ${
+            className={`mt-1.5 rounded-xl py-3 text-sm font-bold text-theme-bg transition hover:brightness-110 disabled:opacity-60 disabled:hover:brightness-100 ${
               isExpense ? "bg-gradient-to-br from-rose-600 to-rose-400" : "bg-gradient-to-br from-violet-700 to-violet-400"
             }`}
           >
