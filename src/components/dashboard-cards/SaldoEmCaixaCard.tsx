@@ -7,7 +7,6 @@ export function SaldoEmCaixaCard({ data }: DashboardCardProps) {
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-theme-border bg-theme-surface p-5">
       <div className="mb-2 font-mono text-xs uppercase tracking-wide text-theme-3">Saldo em caixa</div>
       <div className="text-3xl font-bold text-theme-1">{fmt(data.saldoAtual)}</div>
-      <div className="mt-1 text-xs text-theme-4">acumulado · ajustado pelo que entra e sai</div>
       <div className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto border-t border-theme-border pt-3">
         {data.saldoHistory.length === 0 && <div className="text-xs text-theme-4">Nenhum mês anterior nesse ano</div>}
         {data.saldoHistory.map((h) => (

@@ -412,7 +412,7 @@ dependencies = [
 
 [[package]]
 name = "cashvault-app"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "chrono",
  "csv",

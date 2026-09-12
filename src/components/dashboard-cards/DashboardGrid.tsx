@@ -118,10 +118,16 @@ export function DashboardGrid({ userId, cardProps }: Props) {
                 const Card = entry.component;
                 return (
                   <div key={it.cardKey} className="group relative h-full">
+                    <span
+                      className="absolute right-2 top-2 z-10 flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-theme-border bg-theme-bg text-[10px] text-theme-4 hover:border-violet-400/50 hover:text-theme-1"
+                      title={entry.description}
+                    >
+                      ?
+                    </span>
                     {editMode && (
                       <button
                         onClick={() => removeCard(it.cardKey)}
-                        className="absolute right-2 top-2 z-10 rounded-full border border-theme-border bg-theme-bg px-2 py-0.5 text-xs text-theme-3 opacity-0 transition-opacity hover:border-rose-400 hover:text-rose-400 group-hover:opacity-100"
+                        className="absolute right-8 top-2 z-10 rounded-full border border-theme-border bg-theme-bg px-2 py-0.5 text-xs text-theme-3 opacity-0 transition-opacity hover:border-rose-400 hover:text-rose-400 group-hover:opacity-100"
                         title="Remover card"
                       >
                         ✕

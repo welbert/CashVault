@@ -23,6 +23,7 @@ export function AddCardDrawer({ hiddenKeys, onAdd, onClose }: Props) {
             <button
               key={key}
               onClick={() => onAdd(key)}
+              title={CARD_CATALOG[key].description}
               className="rounded-full border border-theme-border bg-theme-bg px-4 py-2 text-xs font-semibold text-theme-1 hover:border-violet-400/50"
             >
               + {CARD_CATALOG[key].label}

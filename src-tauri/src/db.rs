@@ -91,9 +91,9 @@ fn init_db(conn: &Connection) -> rusqlite::Result<()> {
         );
         CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag ON transaction_tags(tag_id);
 
-        -- `size` sem CHECK de propósito: o vocabulário de tamanhos (ex: '1x1'..'3x3')
+        -- `size` sem CHECK de propósito: o vocabulário de tamanhos (ex: '1x1'..'6x3')
         -- é decisão de catálogo (src/components/dashboard-cards/catalog.ts), não de
-        -- schema — já mudou duas vezes: travar no banco custaria uma migração a cada vez.
+        -- schema — já mudou várias vezes: travar no banco custaria uma migração a cada vez.
         CREATE TABLE IF NOT EXISTS dashboard_layout (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -128,19 +128,20 @@ pub fn seed_default_tags(conn: &Connection, user_id: i64) -> Result<(), String> 
 
 /// (card_key, x, y, size) do layout padrão do Dashboard — ver decisão 14 de
 /// dashboard-customizavel-plano.md. Não tenta reproduzir pixel a pixel o
-/// layout assimétrico antigo, só usa os tamanhos do grid 3x3 em ordem de leitura.
-/// Donut/pizza (meta, compra, tag) são estreitos-e-altos ("1x2"); fluxo de caixa
-/// é largura cheia ("3x2"); o resto é compacto ("1x1").
+/// layout assimétrico antigo, só usa os tamanhos do grid 6 colunas em ordem de leitura.
+/// Donut/pizza (meta, compra, tag) são estreitos-e-altos ("2x2"); fluxo de caixa
+/// é largura cheia ("6x2"); o resto é compacto ("2x1").
 pub const DEFAULT_DASHBOARD_LAYOUT: &[(&str, i64, i64, &str)] = &[
-    ("lucro_mes", 0, 0, "1x1"),
-    ("variacao_mensal", 2, 0, "1x1"),
-    ("saldo_caixa", 4, 0, "1x1"),
-    ("movimento_mes", 0, 1, "1x1"),
-    ("meta_principal", 2, 1, "1x2"),
-    ("compra_principal", 4, 1, "1x2"),
-    ("fluxo_caixa", 0, 3, "3x2"),
-    ("entradas_por_tag", 0, 5, "1x2"),
-    ("saidas_por_tag", 2, 5, "1x2"),
+    ("lucro_mes", 0, 0, "2x1"),
+    ("variacao_mensal", 2, 0, "2x1"),
+    ("saldo_caixa", 4, 0, "2x1"),
+    ("resumo_mes", 0, 1, "2x1"),
+    ("meta_principal", 2, 1, "2x2"),
+    ("compra_principal", 4, 1, "2x2"),
+    ("fluxo_caixa", 0, 3, "6x2"),
+    ("entradas_por_tag", 0, 5, "2x2"),
+    ("saidas_por_tag", 2, 5, "2x2"),
+    ("movimento_mes", 4, 5, "2x2"),
 ];
 
 pub fn seed_default_dashboard_layout(conn: &Connection, user_id: i64) -> Result<(), String> {
@@ -209,6 +210,36 @@ fn migrate_db(conn: &Connection) {
     );
     let _ = conn.execute(
         "UPDATE dashboard_layout SET x = 2, y = 5, size = '1x2' WHERE card_key = 'saidas_por_tag' AND size IN ('1x1','2x2')",
+        [],
+    );
+    migrate_dashboard_layout_size_scheme(conn);
+}
+
+/// Esquema antigo de `dashboard_layout.size`: largura em "unidades" de 2 colunas
+/// (1→2, 2→4, 3→6 de GRID_COLS=6). Esquema novo: largura direta em colunas (1..6),
+/// pra permitir tamanhos mais estreitos que 1/3 do dashboard (catalog.ts). Como
+/// "1x1"/"2x1"/"3x1" são valores válidos nos dois esquemas (com significado
+/// diferente), a tradução só pode rodar uma vez — marca concluída em `config`
+/// pra nunca dobrar a largura de novo em cima de um valor já migrado.
+fn migrate_dashboard_layout_size_scheme(conn: &Connection) {
+    let already_migrated = conn
+        .query_row("SELECT 1 FROM config WHERE key = 'dashboard_size_scheme_v2'", [], |_| Ok(()))
+        .is_ok();
+    if already_migrated {
+        return;
+    }
+    let _ = conn.execute(
+        "UPDATE dashboard_layout SET size =
+            CASE substr(size, 1, 1)
+                WHEN '1' THEN '2' || substr(size, 2)
+                WHEN '2' THEN '4' || substr(size, 2)
+                WHEN '3' THEN '6' || substr(size, 2)
+                ELSE size
+            END",
+        [],
+    );
+    let _ = conn.execute(
+        "INSERT OR REPLACE INTO config (key, value) VALUES ('dashboard_size_scheme_v2', '1')",
         [],
     );
 }

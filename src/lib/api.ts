@@ -104,8 +104,14 @@ export type DashboardData = {
   outByTag: TagAmount[];
 };
 
-/** Largura (1º número) e altura (2º) em passos de grid — ver GRID_COLS/SIZE_DIMENSIONS em dashboard-cards/catalog.ts. */
-export type CardSize = "1x1" | "1x2" | "1x3" | "2x1" | "2x2" | "2x3" | "3x1" | "3x2" | "3x3";
+/** Largura (1º número, em colunas de GRID_COLS = 6) x altura (2º número, em linhas de ROW_HEIGHT) — ver SIZE_DIMENSIONS em dashboard-cards/catalog.ts. */
+export type CardSize =
+  | "1x1" | "1x2" | "1x3"
+  | "2x1" | "2x2" | "2x3"
+  | "3x1" | "3x2" | "3x3"
+  | "4x1" | "4x2" | "4x3"
+  | "5x1" | "5x2" | "5x3"
+  | "6x1" | "6x2" | "6x3";
 
 export type DashboardLayoutItem = {
   cardKey: string;

@@ -1,7 +1,14 @@
-# CashVault — Unreleased
+# CashVault — v0.3.1
 
 ## Features
-- **Feature:** card "Variação mensal" do Dashboard agora também pode ser redimensionado na orientação vertical (1x2), além dos tamanhos já suportados.
+- **Feature:** largura dos cards do Dashboard agora pode ser ajustada em qualquer uma das 6 colunas do grid (antes só havia 3 larguras possíveis, em saltos de 1/3). "Lucro do mês", "Saldo em caixa" e "Variação mensal" ganharam opções de largura mais estreitas que antes não existiam; "Entradas/Saídas por tag" agora também aceitam largura estreita (1x2/1x3).
+- **Feature:** cada card do Dashboard agora tem um "?" no canto superior direito — passar o mouse mostra o que aquele card exibe; a mesma dica aparece ao passar o mouse sobre cada opção na gaveta "Adicionar card".
+- **Feature:** o card "Movimento do mês" foi dividido em dois: "Resumo do mês" (recebido, despesas, despesas previstas e os atalhos "+ Entrada"/"+ Saída") e "Movimento do mês" (só a lista de lançamentos). Quem já customizou o Dashboard precisa adicionar "Resumo do mês" manualmente pela gaveta "Adicionar card".
+- **Feature:** no card "Resumo do mês", a despesa prevista não ocupa mais uma linha própria — aparece como um "⏳" ao lado do valor de despesas, com o valor previsto no tooltip ao passar o mouse.
+- **Feature:** duração da animação dos gráficos do Dashboard (donut de meta/compra/tag e fluxo de caixa) reduzida de ~900-1000ms para 250ms.
+
+## Fixes
+- **Fix:** removidos os textos redundantes "recebido − despesas do mês" (Lucro do mês) e "acumulado · ajustado pelo que entra e sai" (Saldo em caixa) — a informação já está no tooltip "?" do card.
 
 ---
 

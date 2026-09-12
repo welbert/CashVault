@@ -101,10 +101,12 @@ New profiles are born with 8 default tags (`db::DEFAULT_TAGS`, seeded in `create
 | `user_id` | → `users(id)` CASCADE | |
 | `card_key` | TEXT | matches a key in `CARD_CATALOG` (`src/components/dashboard-cards/catalog.ts`), e.g. `"lucro_mes"` |
 | `x` / `y` | INTEGER | grid coordinates, in grid units (see below) — **not** a linear position |
-| `size` | TEXT | one of the 9 values in `CardSize` (`"1x1"` .. `"3x3"`), no `CHECK` (see migration note above) |
+| `size` | TEXT | one of the 18 values in `CardSize` (`"1x1"` .. `"6x3"`), no `CHECK` (see migration note above) |
 | `visible` | INTEGER NOT NULL DEFAULT 1 | `0` when the user removed the card via the "Adicionar card" drawer — row (and its `x`/`y`/`size`) is kept, not deleted, so it reappears where it was if re-added |
 
-Unique on `(user_id, card_key)` — one row per card per profile. `x`/`y`/`w`/`h` feed `react-grid-layout` directly; `w`/`h` aren't stored, they're derived from `size` via `SIZE_DIMENSIONS` in the frontend catalog (grid is 6 columns fixed — `GRID_COLS` — width step = 2 columns, height step = 1 row of 180px). Each catalog entry declares its own `allowedSizes` (a card is never offered a size that doesn't fit its content); resizing snaps to the nearest allowed size, never freeform.
+Unique on `(user_id, card_key)` — one row per card per profile. `x`/`y`/`w`/`h` feed `react-grid-layout` directly; `w`/`h` aren't stored, they're derived from `size` via `SIZE_DIMENSIONS` in the frontend catalog (grid is 6 columns fixed — `GRID_COLS` — width step = 1 column, height step = 1 row of 180px). Each catalog entry declares its own `allowedSizes` (a card is never offered a size that doesn't fit its content); resizing snaps to the nearest allowed size, never freeform.
+
+The width numbering used to be in 2-column steps (`"1x1"` .. `"3x3"`, i.e. `1/2/3` → `2/4/6` columns) before it became direct columns (`1..6`). Pre-existing rows are translated by a one-time, self-guarded data migration (`db.rs`'s `migrate_dashboard_layout_size_scheme`, guarded by the `dashboard_size_scheme_v2` key in `config` — see below) — it can't be a blind re-run on every start like the other migrations here, since e.g. `"2x1"` is a valid value in *both* schemes with a different meaning.
 
 Seeded on profile creation (`db::seed_default_dashboard_layout`, next to `seed_default_tags` in `create_user`) from `DEFAULT_DASHBOARD_LAYOUT`. Profiles that predate this feature get the same seed lazily, the first time `get_dashboard_layout` is called and finds zero rows for that user — so no dashboard ever renders empty. A card added to the catalog later does **not** retroactively appear for existing profiles — it only shows up in the "Adicionar card" drawer until the user adds it manually (new profiles created afterward do get it, via the updated `DEFAULT_DASHBOARD_LAYOUT`).
 
@@ -114,4 +116,4 @@ Layout changes (drag, resize, add/remove/show/hide) autosave with a short deboun
 ```
 config(key TEXT PRIMARY KEY, value TEXT NOT NULL)
 ```
-Today it holds `last_active_user_id` (profile remembered across restarts) and `backup_folder` (chosen folder for automatic `.db` backup, see `commands/backup.rs`). Same pattern as `Personal.TOTP`.
+Today it holds `last_active_user_id` (profile remembered across restarts), `backup_folder` (chosen folder for automatic `.db` backup, see `commands/backup.rs`), and `dashboard_size_scheme_v2` (one-time-migration marker, see `dashboard_layout` above). Same pattern as `Personal.TOTP`.
