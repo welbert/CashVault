@@ -22,7 +22,7 @@ export function GoalDonut({ pct }: { pct: number }) {
         options={{
           cutout: "78%",
           plugins: { legend: { display: false }, tooltip: { enabled: false } },
-          animation: { animateRotate: true, duration: 900 },
+          animation: { animateRotate: true, duration: 250 },
         }}
       />
       <div className="absolute inset-0 flex flex-col items-center justify-center">

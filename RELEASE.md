@@ -1,5 +1,8 @@
 # CashVault — Unreleased
 
+## Features
+- **Feature:** card "Variação mensal" do Dashboard agora também pode ser redimensionado na orientação vertical (1x2), além dos tamanhos já suportados.
+
 ---
 
 # CashVault — v0.3.0

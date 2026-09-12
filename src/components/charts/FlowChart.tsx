@@ -52,6 +52,7 @@ export function FlowChart({ series }: { series: MonthSummary[] }) {
         options={{
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: 250 },
           interaction: { mode: "index", intersect: false },
           plugins: {
             legend: { display: false },

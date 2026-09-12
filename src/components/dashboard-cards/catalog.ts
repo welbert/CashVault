@@ -54,7 +54,7 @@ export type CardCatalogEntry = {
  */
 export const CARD_CATALOG: Record<CardKey, CardCatalogEntry> = {
   lucro_mes: { label: "Lucro do mês", allowedSizes: ["1x1", "1x2"], component: LucroDoMesCard },
-  variacao_mensal: { label: "Variação mensal", allowedSizes: ["1x1", "2x1", "3x1"], component: VariacaoMensalCard },
+  variacao_mensal: { label: "Variação mensal", allowedSizes: ["1x1", "1x2", "2x1", "3x1"], component: VariacaoMensalCard },
   saldo_caixa: { label: "Saldo em caixa", allowedSizes: ["1x1", "1x2"], component: SaldoEmCaixaCard },
   // tem lista de lançamentos rolável — se beneficia de mais altura, não só largura.
   movimento_mes: { label: "Movimento do mês", allowedSizes: ["1x1", "1x2", "1x3", "2x1", "2x2", "2x3"], component: MovimentoDoMesCard },

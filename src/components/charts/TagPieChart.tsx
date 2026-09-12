@@ -39,6 +39,7 @@ export function TagPieChart({ data }: { data: TagAmount[] }) {
           }}
           options={{
             cutout: "62%",
+            animation: { duration: 250 },
             plugins: {
               legend: { display: false },
               tooltip: {
