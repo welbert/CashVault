@@ -28,7 +28,7 @@ After every bug fix or new feature, append an entry to `RELEASE.md` under the cu
 - `**Fix:**` for bug fixes, under `## Fixes`
 - `**Feature:**` for new functionality, under `## Features`
 
-If the version section does not exist yet, create it at the top of the file as `# CashVault — Unreleased`. It gets renamed to the actual version number (`vX.Y.Z`) only in the release commit that bumps the version.
+If the version section does not exist yet, create it at the top of the file as `# CashVault — Unreleased`. In the release commit that bumps the version, **do not rename that header** — instead, add a new `# CashVault — vX.Y.Z` section right below it containing everything that was under `Unreleased`, and leave `# CashVault — Unreleased` empty at the top for the next round of changes. `RELEASE.md` must always start with an `Unreleased` header (empty or not) — see [docs/versioning.md](docs/versioning.md).
 
 ## Schema rule (init_db + migrate_db)
 

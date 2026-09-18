@@ -10,6 +10,24 @@ import { allowedSizeConstraint, sizeFromDimensions } from "./gridConstraints";
 const ROW_HEIGHT = 180;
 const GRID_MARGIN: readonly [number, number] = [16, 16];
 
+/**
+ * Calculado uma única vez (CARD_CATALOG é estático) — o react-grid-layout
+ * compara o prop `layout` com `fast-equals`, que trata função por
+ * *referência*, não por comportamento. `allowedSizeConstraint` devolve uma
+ * closure nova a cada chamada; gerar essa closure dentro do `useMemo` do
+ * `layout` (como era antes) fazia todo recálculo parecer "diferente" pra essa
+ * comparação, mesmo com x/y/largura/altura idênticos — o react-grid-layout
+ * então tratava isso como mudança externa de layout, disparava
+ * `onLayoutChange`, que atualizava o estado daqui, que recalculava o
+ * `layout`, gerando closures novas de novo, para sempre ("Maximum update
+ * depth exceeded"). Cacheando o objeto de constraint aqui ele fica
+ * referencialmente estável entre renders, então a igualdade passa a valer de
+ * verdade quando nada mudou de fato.
+ */
+const CARD_CONSTRAINTS = Object.fromEntries(
+  (Object.keys(CARD_CATALOG) as CardKey[]).map((key) => [key, [allowedSizeConstraint(CARD_CATALOG[key].allowedSizes)]])
+) as Record<CardKey, ReturnType<typeof allowedSizeConstraint>[]>;
+
 type Props = {
   userId: number;
   cardProps: DashboardCardProps;
@@ -20,21 +38,24 @@ export function DashboardGrid({ userId, cardProps }: Props) {
   const { width, containerRef, mounted } = useContainerWidth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const visibleItems = items.filter((it) => it.visible);
+  // Memoizado em cima de `items` (não recalculado como array novo a cada
+  // render por qualquer motivo) — o `layout` abaixo depende disso, e uma
+  // dependência instável aqui anularia essa memoização do mesmo jeito que as
+  // closures de constraint anulavam (ver CARD_CONSTRAINTS acima).
+  const visibleItems = useMemo(() => items.filter((it) => it.visible), [items]);
   const hiddenKeys = (Object.keys(CARD_CATALOG) as CardKey[]).filter((key) => !visibleItems.some((it) => it.cardKey === key));
 
   const layout: LayoutItem[] = useMemo(
     () =>
       visibleItems.map((it) => {
         const dim = SIZE_DIMENSIONS[it.size];
-        const catalogEntry = CARD_CATALOG[it.cardKey as CardKey] as (typeof CARD_CATALOG)[CardKey] | undefined;
         return {
           i: it.cardKey,
           x: it.x,
           y: it.y,
           w: dim.w,
           h: dim.h,
-          constraints: catalogEntry ? [allowedSizeConstraint(catalogEntry.allowedSizes)] : undefined,
+          constraints: CARD_CONSTRAINTS[it.cardKey as CardKey],
         };
       }),
     [visibleItems]

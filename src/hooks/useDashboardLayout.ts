@@ -13,6 +13,14 @@ export function useDashboardLayout(userId: number | undefined) {
   // foto do layout ao entrar no modo de edição — permite "Cancelar" desfazer
   // tudo que foi autosalvo durante a sessão de edição, não só o estado visual.
   const snapshotRef = useRef<DashboardLayoutItem[] | null>(null);
+  // Encadeia cada save depois que o anterior termina — duas ações rápidas
+  // (ex.: adicionar dois cards em seguida) disparam cada uma sua própria
+  // chamada `dashboardLayout.save`, e nada garante que essas duas idas-e-
+  // -voltas assíncronas cheguem ao backend na ordem em que foram disparadas.
+  // Sem isso, a lista *mais antiga* (menor) podia sobrescrever a mais nova no
+  // banco mesmo com a tela já mostrando as duas adições — só aparecia depois
+  // de um reload, quando o card "perdido" voltava a aparecer como disponível.
+  const saveChain = useRef<Promise<void>>(Promise.resolve());
 
   const reload = useCallback(async () => {
     if (!userId) return;
@@ -32,7 +40,9 @@ export function useDashboardLayout(userId: number | undefined) {
 
   function save(next: DashboardLayoutItem[]) {
     if (!userId) return;
-    api.dashboardLayout.save(userId, next).catch((err) => logger.error("falha ao salvar layout do dashboard", err));
+    saveChain.current = saveChain.current.finally(() =>
+      api.dashboardLayout.save(userId, next).catch((err) => logger.error("falha ao salvar layout do dashboard", err))
+    );
   }
 
   // autosave com debounce (decisão 12 do plano) — só faz sentido pro arrasto/resize

@@ -1,3 +1,15 @@
+# CashVault — Unreleased
+
+---
+
+# CashVault — v0.3.2
+
+## Fixes
+- **Fix:** modo de edição do Dashboard podia travar com o erro "Maximum update depth exceeded" e gerar aumento de consumo de CPU — as constraints de tamanho de cada card eram recriadas (nova closure) a cada render, o que fazia o `react-grid-layout` (que compara o layout por referência) achar que houve mudança externa e disparar `onLayoutChange` em loop infinito.
+- **Fix:** adicionar ou mover dois cards do Dashboard em sequência rápida podia perder um deles — as chamadas de salvamento do layout são assíncronas e não há garantia de que cheguem ao banco na mesma ordem em que foram disparadas, então a mais antiga podia sobrescrever a mais nova (o card só reaparecia depois de recarregar o app). Os salvamentos agora são encadeados em sequência.
+
+---
+
 # CashVault — v0.3.1
 
 ## Features

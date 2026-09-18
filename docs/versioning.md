@@ -40,4 +40,38 @@ Edit each file manually at the indicated line:
 - `**Fix:**` for bug fixes, under `## Fixes`
 - `**Feature:**` for new functionality, under `## Features`
 
-Work in progress always lives under a `# CashVault — Unreleased` section at the top of the file — created the first time a fix/feature needs it. In the release commit that bumps the version, that `# CashVault — Unreleased` header is renamed to the actual version (`# CashVault — vX.Y.Z`), **and a fresh empty `# CashVault — Unreleased` header is added back above it** so the next round of changes has somewhere to go. `RELEASE.md` should always start with an `Unreleased` section (empty or not), followed by the versioned sections newest-first.
+Work in progress always lives under a `# CashVault — Unreleased` section at the top of the file — created the first time a fix/feature needs it.
+
+**Closing a release never renames or removes the `Unreleased` header.** In the release commit that bumps the version:
+1. Keep the `# CashVault — Unreleased` header, but empty out its content (the `## Features` / `## Fixes` entries move out of it).
+2. Right below it, add a new `# CashVault — vX.Y.Z` section containing exactly that content.
+
+Before (about to release `0.3.2`):
+```
+# CashVault — Unreleased
+
+## Fixes
+- **Fix:** ...
+
+---
+
+# CashVault — v0.3.1
+```
+
+After:
+```
+# CashVault — Unreleased
+
+---
+
+# CashVault — v0.3.2
+
+## Fixes
+- **Fix:** ...
+
+---
+
+# CashVault — v0.3.1
+```
+
+`RELEASE.md` must always start with an `Unreleased` header — empty or not — followed by the versioned sections newest-first. If a release commit ever leaves `RELEASE.md` without an `Unreleased` header at the top, that's a mistake to fix immediately, not a valid state to build on.
